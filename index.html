@@ -13,25 +13,25 @@
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, doc, getDoc, setDoc, updateDoc, increment, collection, addDoc, getDocs, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, increment, collection, addDoc, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // ================= CONFIG (သင့် အချက်အလက်များ) =================
+        // ================= CONFIG =================
         const BOT_USERNAME = "Ad_Airdrop_bot"; 
         const APP_SHORT_NAME = "app"; 
-        const BOT_TOKEN = "9268751430:AAHNysSjix_l_j4VxRZq2VUZSpS9FDpA2bQ"; // လုံခြုံရေးအရ Token အသစ်ပြန်ထုတ်ထည့်ရန် အကြံပြုပါသည်
+        const BOT_TOKEN = "9268751430:AAHNysSjix_l_j4VxRZq2VUZSpS9FDpA2bQ"; 
         const ADMIN_ID = "5330848428"; 
-        const PAYOUT_CHANNEL = "@GoldenSteal"; // Bot ကို ဒီ Channel မှာ Admin ခန့်ထားရပါမယ်
+        const PAYOUT_CHANNEL = "@GoldenSteal"; 
 
-        // သင့် Firebase Project Settings က Config ကို ဒီနေရာမှာ အစားထိုးပါ
         const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_PROJECT.firebaseapp.com",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_PROJECT.appspot.com",
-            messagingSenderId: "123456789",
-            appId: "1:123456789:web:abcdef"
+            apiKey: "AIzaSyB-XOl5CdJnC6WwkcX-HBkBTElw_YhC03M",
+            authDomain: "adpro-bot.firebaseapp.com",
+            projectId: "adpro-bot",
+            storageBucket: "adpro-bot.firebasestorage.app",
+            messagingSenderId: "41854671740",
+            appId: "1:41854671740:web:0b04658c3e80a55beaa2f9",
+            measurementId: "G-JPKV9WY9XB"
         };
-        // ================================================================
+        // ==========================================
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
@@ -42,17 +42,13 @@
 
         const user = tg.initDataUnsafe?.user || { id: 5330848428, first_name: "Admin", username: "admin" };
         const userId = String(user.id);
-
-        // Referral ID ဖမ်းယူခြင်း (URL parameter & Telegram start_param နှစ်မျိုးလုံး စစ်ဆေးခြင်း)
         const urlParams = new URLSearchParams(window.location.search);
         const startParam = tg.initDataUnsafe?.start_param || urlParams.get('tgWebAppStartParam') || "";
 
-        // Admin ဖြစ်နေရင် Bottom Nav မှာ Admin ခလုတ် ဖော်ပြပေးမယ်
         if (userId === ADMIN_ID) {
             document.getElementById('nav-admin').classList.remove('hidden');
         }
 
-        // UI Setup
         document.getElementById('user-name').innerText = user.first_name;
         document.getElementById('user-username').innerText = user.username ? `@${user.username}` : `ID: ${userId}`;
         if (user.photo_url) document.getElementById('user-avatar').src = user.photo_url;
@@ -60,7 +56,6 @@
         const myInviteLink = `https://t.me/${BOT_USERNAME}/${APP_SHORT_NAME}?startapp=${userId}`;
         document.getElementById('ref-link').innerText = myInviteLink;
 
-        // TON Connect
         const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
             manifestUrl: 'https://ton-connect.github.io/demo-dapp-with-react-ui/tonconnect-manifest.json',
             buttonRootId: 'ton-connect'
@@ -70,8 +65,7 @@
         let appSettings = { adsgramBlockId: "1234", adReward: 5, refReward: 25 };
         let tasksList = [];
 
-        // 1. App Settings & Tasks များကို Firebase မှ ဆွဲယူခြင်း
-        async function loadConfigAndTasks() {
+        async function initUser() {
             try {
                 const settingsSnap = await getDoc(doc(db, "settings", "config"));
                 if (settingsSnap.exists()) {
@@ -82,67 +76,45 @@
                 document.getElementById('ad-reward-label').innerText = appSettings.adReward;
                 document.getElementById('task-ad-reward').innerText = appSettings.adReward;
                 document.getElementById('ref-reward-label').innerText = appSettings.refReward;
-                
-                // Admin Inputs ဖြည့်ထားပေးခြင်း
                 document.getElementById('admin-block-id').value = appSettings.adsgramBlockId;
                 document.getElementById('admin-ad-reward').value = appSettings.adReward;
                 document.getElementById('admin-ref-reward').value = appSettings.refReward;
 
                 await loadTasks();
-            } catch (e) {
-                console.error("Firebase Config Error:", e);
-            }
-        }
 
-        // 2. User Data & Referral System စစ်ဆေးခြင်း
-        async function initUser() {
-            await loadConfigAndTasks();
-            const userRef = doc(db, "users", userId);
-            const snap = await getDoc(userRef);
+                const userRef = doc(db, "users", userId);
+                const snap = await getDoc(userRef);
 
-            if (!snap.exists()) {
-                let validRef = "";
-                // Referral Link မှ ဝင်လာသူဖြစ်ပြီး ကိုယ့်ကိုယ်ကိုယ် ပြန်မဖိတ်ထားရင်
-                if (startParam && startParam !== userId) {
-                    const refUserRef = doc(db, "users", String(startParam));
-                    const refSnap = await getDoc(refUserRef);
-                    if (refSnap.exists()) {
-                        validRef = String(startParam);
-                        const bonus = Number(appSettings.refReward) || 25;
-                        await updateDoc(refUserRef, {
-                            volt: increment(bonus),
-                            referrals: increment(1)
-                        });
-                        // ဖိတ်ခေါ်သူဆီ Bot မှတစ်ဆင့် အကြောင်းကြားစာပို့ခြင်း
-                        sendTelegramMsg(validRef, `🎉 <b>New Referral!</b>\n\nသူငယ်ချင်း <b>${user.first_name}</b> ဝင်ရောက်လာသဖြင့် <b>+${bonus} VOLT</b> ရရှိပါသည်။`);
+                if (!snap.exists()) {
+                    let validRef = "";
+                    if (startParam && startParam !== userId) {
+                        const refUserRef = doc(db, "users", String(startParam));
+                        const refSnap = await getDoc(refUserRef);
+                        if (refSnap.exists()) {
+                            validRef = String(startParam);
+                            const bonus = Number(appSettings.refReward) || 25;
+                            await updateDoc(refUserRef, { volt: increment(bonus), referrals: increment(1) });
+                            sendTelegramMsg(validRef, `🎉 <b>New Referral!</b>\n\nသူငယ်ချင်း <b>${user.first_name}</b> ဝင်ရောက်လာသဖြင့် <b>+${bonus} VOLT</b> ရရှိပါသည်။`);
+                        }
                     }
+                    userData = { name: user.first_name, username: user.username || "", volt: 10, lastDaily: "", referrals: 0, referredBy: validRef, completedTasks: [] };
+                    await setDoc(userRef, userData);
+                } else {
+                    userData = snap.data();
+                    if (!userData.completedTasks) userData.completedTasks = [];
                 }
-
-                userData = {
-                    name: user.first_name,
-                    username: user.username || "",
-                    volt: 10, // Welcome Bonus
-                    lastDaily: "",
-                    referrals: 0,
-                    referredBy: validRef,
-                    completedTasks: []
-                };
-                await setDoc(userRef, userData);
-            } else {
-                userData = snap.data();
-                if (!userData.completedTasks) userData.completedTasks = [];
+                updateUI();
+            } catch (err) {
+                tg.showAlert("Firebase Error: " + err.message);
             }
-            updateUI();
-            renderTasks();
         }
 
         function updateUI() {
             document.getElementById('volt-balance').innerText = (userData.volt || 0).toLocaleString();
             document.getElementById('ref-count').innerText = userData.referrals || 0;
             const tonVal = ((userData.volt || 0) * 0.0001).toFixed(4);
-            const usdVal = (tonVal * 5.2).toFixed(2);
             document.getElementById('ton-equiv').innerText = tonVal;
-            document.getElementById('usd-equiv').innerText = usdVal;
+            document.getElementById('usd-equiv').innerText = (tonVal * 5.2).toFixed(2);
 
             const today = new Date().toDateString();
             const dailyBtn = document.getElementById('daily-btn');
@@ -153,7 +125,6 @@
             }
         }
 
-        // 3. Watch Ad (Adsgram)
         window.watchAd = async function() {
             const reward = Number(appSettings.adReward) || 5;
             const giveReward = async () => {
@@ -165,16 +136,12 @@
 
             if (window.Adsgram && appSettings.adsgramBlockId && appSettings.adsgramBlockId !== "1234") {
                 const AdController = window.Adsgram.init({ blockId: String(appSettings.adsgramBlockId) });
-                AdController.show().then(giveReward).catch((err) => {
-                    tg.showAlert("ကြော်ငြာ မရှိသေးပါ (သို့) ကြော်ငြာပြီးအောင် မကြည့်ရသေးပါ။");
-                });
+                AdController.show().then(giveReward).catch(() => tg.showAlert("ကြော်ငြာ မရှိသေးပါ (သို့) ပြီးအောင် မကြည့်ရသေးပါ။"));
             } else {
-                // Block ID အစစ် မထည့်ရသေးခင် စမ်းသပ်ရန်
                 giveReward();
             }
         };
 
-        // 4. Daily Bonus
         window.claimDaily = async function() {
             const today = new Date().toDateString();
             if (userData.lastDaily !== today) {
@@ -186,7 +153,6 @@
             }
         };
 
-        // 5. Dynamic Tasks System
         async function loadTasks() {
             const snap = await getDocs(collection(db, "tasks"));
             tasksList = [];
@@ -202,7 +168,6 @@
                 container.innerHTML = `<div class="text-xs text-gray-500 text-center py-4">လောလောဆယ် Task အသစ် မရှိသေးပါ။</div>`;
                 return;
             }
-
             tasksList.forEach(task => {
                 const isDone = userData.completedTasks.includes(task.id);
                 container.innerHTML += `
@@ -211,94 +176,45 @@
                             <div class="font-bold text-sm">${task.title}</div>
                             <div class="text-xs text-yellow-400">+${task.reward} VOLT</div>
                         </div>
-                        <button onclick="doTask('${task.id}', ${task.reward}, '${task.url}')" 
-                            ${isDone ? 'disabled' : ''} 
-                            class="${isDone ? 'bg-gray-700 text-gray-400' : 'bg-sky-500 text-white'} font-bold text-xs px-4 py-2 rounded-lg">
+                        <button onclick="doTask('${task.id}', ${task.reward}, '${task.url}')" ${isDone ? 'disabled' : ''} class="${isDone ? 'bg-gray-700 text-gray-400' : 'bg-sky-500 text-white'} font-bold text-xs px-4 py-2 rounded-lg">
                             ${isDone ? 'Done ✓' : 'Start'}
                         </button>
-                    </div>
-                `;
+                    </div>`;
             });
         }
 
         window.doTask = async function(taskId, reward, url) {
             if (userData.completedTasks.includes(taskId)) return;
-            if (url.includes('t.me')) {
-                tg.openTelegramLink(url);
-            } else {
-                tg.openLink(url);
-            }
-            
+            url.includes('t.me') ? tg.openTelegramLink(url) : tg.openLink(url);
             setTimeout(async () => {
                 userData.volt += Number(reward);
                 userData.completedTasks.push(taskId);
                 updateUI();
                 renderTasks();
-                await updateDoc(doc(db, "users", userId), {
-                    volt: increment(Number(reward)),
-                    completedTasks: userData.completedTasks
-                });
+                await updateDoc(doc(db, "users", userId), { volt: increment(Number(reward)), completedTasks: userData.completedTasks });
                 tg.showAlert(`✅ Task ပြီးမြောက်ပါပြီ! +${reward} VOLT`);
             }, 3000);
         };
 
-        // 6. Payout & Withdraw System -> @GoldenSteal + Admin Alert
         window.requestWithdraw = async function() {
             const amount = parseInt(document.getElementById('withdraw-amount').value);
             const walletAddress = tonConnectUI.account?.address || "";
-
-            if (!tonConnectUI.connected || !walletAddress) {
-                tg.showAlert("⚠️ ကျေးဇူးပြု၍ အပေါ်ဆုံးမှ Connect Wallet ကိုနှိပ်ပြီး TON Wallet အရင်ချိတ်ဆက်ပါ!");
-                return;
-            }
-            if (!amount || amount < 1000) {
-                tg.showAlert("⚠️ အနည်းဆုံး 1,000 VOLT ပြည့်မှ ထုတ်ယူနိုင်ပါမည်!");
-                return;
-            }
-            if (amount > userData.volt) {
-                tg.showAlert("⚠️ VOLT လက်ကျန် မလုံလောက်ပါ!");
-                return;
-            }
+            if (!tonConnectUI.connected || !walletAddress) return tg.showAlert("⚠️ TON Wallet အရင်ချိတ်ဆက်ပါ!");
+            if (!amount || amount < 1000) return tg.showAlert("⚠️ အနည်းဆုံး 1,000 VOLT ပြည့်မှ ထုတ်ယူနိုင်ပါမည်!");
+            if (amount > userData.volt) return tg.showAlert("⚠️ VOLT လက်ကျန် မလုံလောက်ပါ!");
 
             const tonAmount = (amount * 0.0001).toFixed(4);
             const shortWallet = walletAddress.slice(0, 6) + "..." + walletAddress.slice(-6);
 
-            // User လက်ကျန်လျှော့မယ်
             userData.volt -= amount;
             updateUI();
             await updateDoc(doc(db, "users", userId), { volt: increment(-amount) });
+            await addDoc(collection(db, "withdrawals"), { userId, name: user.first_name, username: user.username || "", amount, ton: tonAmount, wallet: walletAddress, status: "pending", date: new Date().toISOString() });
 
-            // Firebase ထဲ မှတ်တမ်းသိမ်းမယ်
-            const docRef = await addDoc(collection(db, "withdrawals"), {
-                userId: userId,
-                name: user.first_name,
-                username: user.username || "",
-                amount: amount,
-                ton: tonAmount,
-                wallet: walletAddress,
-                status: "pending",
-                date: new Date().toISOString()
-            });
+            await sendTelegramMsg(PAYOUT_CHANNEL, `💸 <b>NEW PAYOUT REQUEST</b>\n\n👤 <b>User:</b> ${user.first_name}\n⚡ <b>Amount:</b> ${amount.toLocaleString()} VOLT (${tonAmount} TON)\n💼 <b>Wallet:</b> <code>${shortWallet}</code>\n⏳ <b>Status:</b> Processing...\n\n🤖 Earn now: @${BOT_USERNAME}`);
+            await sendTelegramMsg(ADMIN_ID, `🚨 <b>ADMIN WITHDRAW ALERT</b>\n\n👤 User: ${user.first_name} (ID: <code>${userId}</code>)\n💎 Pay: <b>${tonAmount} TON</b>\n📋 Wallet:\n<code>${walletAddress}</code>`);
 
-            // 1. Payout Channel (@GoldenSteal) ဆီ Public Payout Alert ပို့မယ်
-            const channelMsg = `💸 <b>NEW PAYOUT REQUEST</b>\n\n` +
-                `👤 <b>User:</b> ${user.first_name} (ID: <code>${userId}</code>)\n` +
-                `⚡ <b>Amount:</b> ${amount.toLocaleString()} VOLT\n` +
-                `💎 <b>Value:</b> ${tonAmount} TON\n` +
-                `💼 <b>Wallet:</b> <code>${shortWallet}</code>\n` +
-                `⏳ <b>Status:</b> Processing...\n\n` +
-                `🤖 Earn now: @${BOT_USERNAME}`;
-            await sendTelegramMsg(PAYOUT_CHANNEL, channelMsg);
-
-            // 2. Admin (5330848428) ဆီ Wallet အပြည့်အစုံနဲ့ Private Alert ပို့မယ်
-            const adminMsg = `🚨 <b>ADMIN WITHDRAW ALERT</b>\n\n` +
-                `👤 User: ${user.first_name} (@${user.username || 'none'})\n` +
-                `🆔 ID: <code>${userId}</code>\n` +
-                `💎 Pay Amount: <b>${tonAmount} TON</b> (${amount} VOLT)\n` +
-                `📋 Full Wallet Address (နှိပ်ပြီး Copy ကူးပါ):\n<code>${walletAddress}</code>`;
-            await sendTelegramMsg(ADMIN_ID, adminMsg);
-
-            tg.showAlert(`✅ Withdraw တင်ပြီးပါပြီ!\n${PAYOUT_CHANNEL} Channel တွင် စစ်ဆေးနိုင်ပါသည်။`);
+            tg.showAlert(`✅ Withdraw တင်ပြီးပါပြီ! ${PAYOUT_CHANNEL} တွင် စစ်ဆေးနိုင်ပါသည်။`);
             loadAdminWithdrawals();
         };
 
@@ -306,46 +222,47 @@
             return fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ chat_id: chatId, text: text, parse_mode: 'HTML', disable_web_page_preview: true })
+                body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'HTML', disable_web_page_preview: true })
             });
         }
 
-        // ================= ADMIN PANEL FUNCTIONS =================
         window.saveAdminSettings = async function() {
-            if (userId !== ADMIN_ID) return;
-            const blockId = document.getElementById('admin-block-id').value.trim();
-            const adReward = Number(document.getElementById('admin-ad-reward').value) || 5;
-            const refReward = Number(document.getElementById('admin-ref-reward').value) || 25;
+            try {
+                const blockId = document.getElementById('admin-block-id').value.trim();
+                const adReward = Number(document.getElementById('admin-ad-reward').value) || 5;
+                const refReward = Number(document.getElementById('admin-ref-reward').value) || 25;
 
-            appSettings = { adsgramBlockId: blockId, adReward, refReward };
-            await setDoc(doc(db, "settings", "config"), appSettings);
-            document.getElementById('ad-reward-label').innerText = adReward;
-            document.getElementById('task-ad-reward').innerText = adReward;
-            document.getElementById('ref-reward-label').innerText = refReward;
-            tg.showAlert("✅ Ad & Referral Settings သိမ်းဆည်းပြီးပါပြီ!");
+                appSettings = { adsgramBlockId: blockId, adReward, refReward };
+                await setDoc(doc(db, "settings", "config"), appSettings);
+                document.getElementById('ad-reward-label').innerText = adReward;
+                document.getElementById('task-ad-reward').innerText = adReward;
+                document.getElementById('ref-reward-label').innerText = refReward;
+                tg.showAlert("✅ Settings သိမ်းဆည်းပြီးပါပြီ!");
+            } catch (e) {
+                tg.showAlert("Error: " + e.message);
+            }
         };
 
         window.addNewTask = async function() {
-            if (userId !== ADMIN_ID) return;
-            const title = document.getElementById('new-task-title').value.trim();
-            const url = document.getElementById('new-task-url').value.trim();
-            const reward = Number(document.getElementById('new-task-reward').value);
+            try {
+                const title = document.getElementById('new-task-title').value.trim();
+                const url = document.getElementById('new-task-url').value.trim();
+                const reward = Number(document.getElementById('new-task-reward').value);
 
-            if (!title || !url || !reward) {
-                tg.showAlert("Task အချက်အလက် အပြည့်အစုံ ဖြည့်ပါ!");
-                return;
+                if (!title || !url || !reward) return tg.showAlert("Task အချက်အလက် အပြည့်အစုံ ဖြည့်ပါ!");
+
+                await addDoc(collection(db, "tasks"), { title, url, reward });
+                document.getElementById('new-task-title').value = "";
+                document.getElementById('new-task-url').value = "";
+                document.getElementById('new-task-reward').value = "";
+                await loadTasks();
+                tg.showAlert("✅ Task အသစ် ထည့်သွင်းပြီးပါပြီ!");
+            } catch (e) {
+                tg.showAlert("Error: " + e.message);
             }
-
-            await addDoc(collection(db, "tasks"), { title, url, reward });
-            document.getElementById('new-task-title').value = "";
-            document.getElementById('new-task-url').value = "";
-            document.getElementById('new-task-reward').value = "";
-            await loadTasks();
-            tg.showAlert("✅ Task အသစ် ထည့်သွင်းပြီးပါပြီ!");
         };
 
         window.deleteTask = async function(id) {
-            if (userId !== ADMIN_ID) return;
             await deleteDoc(doc(db, "tasks", id));
             await loadTasks();
             tg.showAlert("🗑️ Task ဖျက်ပြီးပါပြီ!");
@@ -359,11 +276,10 @@
                     <div class="flex justify-between items-center bg-black/40 p-2.5 rounded-lg border border-gray-800 text-xs">
                         <div>
                             <div class="font-bold">${t.title} (+${t.reward} VOLT)</div>
-                            <div class="text-gray-400 truncate max-w-[200px]">${t.url}</div>
+                            <div class="text-gray-400 truncate max-w-[180px]">${t.url}</div>
                         </div>
                         <button onclick="deleteTask('${t.id}')" class="bg-red-500/20 text-red-400 px-2.5 py-1.5 rounded">Delete</button>
-                    </div>
-                `;
+                    </div>`;
             });
         }
 
@@ -385,8 +301,7 @@
                             <button onclick="markPaid('${d.id}', '${w.name}', '${w.ton}', '${w.wallet}')" class="w-full bg-green-600 text-white font-bold py-1.5 rounded mt-1">
                                 Mark as Paid & Post to @GoldenSteal
                             </button>
-                        </div>
-                    `;
+                        </div>`;
                 }
             });
         };
@@ -474,7 +389,6 @@
             <button id="daily-btn" onclick="claimDaily()" class="bg-sky-500 text-white font-bold text-xs px-5 py-2.5 rounded-xl">Claim</button>
         </div>
 
-        <!-- Payout Channel Link -->
         <a href="https://t.me/GoldenSteal" target="_blank" class="glass-box rounded-xl p-3.5 flex items-center justify-between block">
             <div class="flex items-center space-x-3">
                 <div class="w-10 h-10 rounded-xl bg-green-500/10 border border-green-500/30 flex items-center justify-center text-green-400 text-lg">
@@ -499,7 +413,6 @@
             </div>
             <button onclick="watchAd()" class="bg-yellow-500 text-black font-bold text-xs px-4 py-2 rounded-lg">Watch</button>
         </div>
-        <!-- Admin ထည့်ထားသော Task များ ဒီနေရာမှာ ပေါ်ပါမယ် -->
         <div id="dynamic-tasks-list" class="space-y-2.5"></div>
     </div>
 
@@ -533,11 +446,10 @@
         </div>
     </div>
 
-    <!-- ADMIN TAB (ID 5330848428 တစ်ဦးတည်းသာ မြင်ရမည်) -->
+    <!-- ADMIN TAB -->
     <div id="tab-admin" class="px-3 space-y-4 hidden">
         <h2 class="text-lg font-bold text-yellow-400 px-1">👑 Admin Control Panel</h2>
         
-        <!-- 1. Ad & Ref Settings -->
         <div class="glass-box rounded-xl p-4 space-y-3">
             <div class="font-bold text-sm border-b border-gray-800 pb-2">1. Adsgram & Referral Settings</div>
             <div>
@@ -557,7 +469,6 @@
             <button onclick="saveAdminSettings()" class="w-full bg-yellow-500 text-black font-bold py-2 rounded-lg text-xs">Save Settings</button>
         </div>
 
-        <!-- 2. Add New Task -->
         <div class="glass-box rounded-xl p-4 space-y-3">
             <div class="font-bold text-sm border-b border-gray-800 pb-2">2. Add / Manage Tasks</div>
             <input id="new-task-title" type="text" placeholder="Task Name (e.g. Join GoldenSteal)" class="w-full bg-black/40 border border-gray-700 rounded-lg px-3 py-2 text-xs">
@@ -568,7 +479,6 @@
             <div id="admin-tasks-list" class="space-y-2 pt-2"></div>
         </div>
 
-        <!-- 3. Pending Withdrawals -->
         <div class="glass-box rounded-xl p-4 space-y-3">
             <div class="flex justify-between items-center border-b border-gray-800 pb-2">
                 <span class="font-bold text-sm">3. Pending Withdrawals</span>
