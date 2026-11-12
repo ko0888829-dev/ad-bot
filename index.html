@@ -3,110 +3,269 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AdVOLT Mini App</title>
-    <!-- Telegram Web App SDK -->
+    <title>AdPro Mini App</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <!-- TON Connect UI SDK -->
     <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Adsgram SDK (သင့် Block ID ရရင် အောက်က 1234 နေရာမှာ အစားထိုးပါ) -->
     <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
 
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, increment, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // ================= CONFIG (ဒီနေရာတွေကို ပြင်ပါ) =================
+        const BOT_USERNAME = "Ad_Airdrop_bot"; // သင့် Bot Username (@ မပါရ)
+        const APP_SHORT_NAME = "app"; // BotFather မှာ ပေးခဲ့တဲ့ Short Name
+        const ADSGRAM_BLOCK_ID = "1234"; // Adsgram Block ID
+        
+        // Withdraw တင်ရင် သင့် Telegram ဆီ စာပို့ဖို့ (လုံခြုံရေးအရ Token အသစ်ပြန်ထုတ်ပြီး ထည့်ပါ)
+        const BOT_TOKEN = "9268751430:AAHNysSjix_l_j4VxRZq2VUZSpS9FDpA2bQ"; 
+        const ADMIN_CHAT_ID = "YOUR_TELEGRAM_ID"; // @userinfobot မှာ ကြည့်ပြီး ထည့်ပါ
+
+        // သင့် Firebase Project Settings က ရတဲ့ Config ထည့်ပါ
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "1:123456789:web:abcdef"
+        };
+        // ================================================================
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.ready();
+
+        const user = tg.initDataUnsafe?.user || { id: 12345678, first_name: "User", username: "player" };
+        const userId = String(user.id);
+        const startParam = tg.initDataUnsafe?.start_param || ""; // Referral ID ဖမ်းရန်
+
+        // UI Setup
+        document.getElementById('user-name').innerText = user.first_name;
+        document.getElementById('user-username').innerText = user.username ? `@${user.username}` : `ID: ${userId}`;
+        if (user.photo_url) document.getElementById('user-avatar').src = user.photo_url;
+        
+        // သင့် Bot အစစ်ရဲ့ Invite Link
+        const myInviteLink = `https://t.me/${BOT_USERNAME}/${APP_SHORT_NAME}?startapp=${userId}`;
+        document.getElementById('ref-link').innerText = myInviteLink;
+
+        // TON Connect
+        const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
+            manifestUrl: 'https://ton-connect.github.io/demo-dapp-with-react-ui/tonconnect-manifest.json',
+            buttonRootId: 'ton-connect'
+        });
+
+        let userData = { volt: 0, lastDaily: "", referrals: 0, referredBy: "" };
+
+        // Firebase ထဲက User Data ဆွဲထုတ်ခြင်း (သို့) အသစ်ဆောက်ခြင်း
+        async function initUser() {
+            const userRef = doc(db, "users", userId);
+            const snap = await getDoc(userRef);
+
+            if (!snap.exists()) {
+                let validRef = "";
+                if (startParam && startParam !== userId) {
+                    validRef = startParam;
+                    // ဖိတ်ခေါ်သူ (Referrer) ကို +25 VOLT ဆုချမယ်
+                    const refUserRef = doc(db, "users", validRef);
+                    const refSnap = await getDoc(refUserRef);
+                    if (refSnap.exists()) {
+                        await updateDoc(refUserRef, {
+                            volt: increment(25),
+                            referrals: increment(1)
+                        });
+                    }
+                }
+                userData = {
+                    name: user.first_name,
+                    username: user.username || "",
+                    volt: 10, // Welcome Bonus 10 VOLT
+                    lastDaily: "",
+                    referrals: 0,
+                    referredBy: validRef
+                };
+                await setDoc(userRef, userData);
+            } else {
+                userData = snap.data();
+            }
+            updateUI();
+        }
+
+        function updateUI() {
+            document.getElementById('volt-balance').innerText = (userData.volt || 0).toLocaleString();
+            document.getElementById('ref-count').innerText = userData.referrals || 0;
+            const tonVal = ((userData.volt || 0) * 0.0001).toFixed(4);
+            const usdVal = (tonVal * 5.2).toFixed(2);
+            document.getElementById('ton-equiv').innerText = tonVal;
+            document.getElementById('usd-equiv').innerText = usdVal;
+
+            const today = new Date().toDateString();
+            const dailyBtn = document.getElementById('daily-btn');
+            if (userData.lastDaily === today) {
+                dailyBtn.innerText = "Claimed";
+                dailyBtn.classList.replace('bg-sky-500', 'bg-gray-700');
+                dailyBtn.disabled = true;
+            }
+        }
+
+        // Watch Ad
+        window.watchAd = async function() {
+            const rewardUser = async () => {
+                userData.volt += 5;
+                updateUI();
+                await updateDoc(doc(db, "users", userId), { volt: increment(5) });
+                tg.showAlert("🎉 +5 VOLT earned!");
+            };
+
+            if (window.Adsgram) {
+                const AdController = window.Adsgram.init({ blockId: ADSGRAM_BLOCK_ID });
+                AdController.show().then(rewardUser).catch(() => {
+                    // Demo fallback
+                    rewardUser();
+                });
+            } else {
+                rewardUser();
+            }
+        };
+
+        // Daily Bonus
+        window.claimDaily = async function() {
+            const today = new Date().toDateString();
+            if (userData.lastDaily !== today) {
+                userData.volt += 10;
+                userData.lastDaily = today;
+                updateUI();
+                await updateDoc(doc(db, "users", userId), {
+                    volt: increment(10),
+                    lastDaily: today
+                });
+                tg.showAlert("⚡ Daily Bonus +10 VOLT claimed!");
+            }
+        };
+
+        // Complete Task
+        window.completeTask = async function(reward, url) {
+            tg.openTelegramLink(url);
+            setTimeout(async () => {
+                userData.volt += reward;
+                updateUI();
+                await updateDoc(doc(db, "users", userId), { volt: increment(reward) });
+                tg.showAlert(`Task completed! +${reward} VOLT`);
+            }, 3000);
+        };
+
+        // Copy Invite Link
+        window.copyRef = function() {
+            navigator.clipboard.writeText(myInviteLink);
+            tg.showAlert("✅ Your Invite Link Copied:\n" + myInviteLink);
+        };
+
+        // Withdraw Request -> Firebase + Telegram Admin Alert
+        window.requestWithdraw = async function() {
+            const amount = parseInt(document.getElementById('withdraw-amount').value);
+            const walletAddress = tonConnectUI.account?.address || "Not Connected";
+
+            if (!tonConnectUI.connected) {
+                tg.showAlert("ကျေးဇူးပြု၍ TON Wallet အရင်ချိတ်ဆက်ပါ!");
+                return;
+            }
+            if (!amount || amount < 1000) {
+                tg.showAlert("အနည်းဆုံး 1,000 VOLT ပြည့်မှ ထုတ်ယူနိုင်ပါမည်!");
+                return;
+            }
+            if (amount > userData.volt) {
+                tg.showAlert("VOLT လက်ကျန် မလုံလောက်ပါ!");
+                return;
+            }
+
+            userData.volt -= amount;
+            updateUI();
+            await updateDoc(doc(db, "users", userId), { volt: increment(-amount) });
+
+            // Firebase ထဲ Withdraw မှတ်တမ်းသိမ်းမယ်
+            await addDoc(collection(db, "withdrawals"), {
+                userId: userId,
+                name: user.first_name,
+                amount: amount,
+                ton: (amount * 0.0001).toFixed(4),
+                wallet: walletAddress,
+                status: "pending",
+                date: new Date().toISOString()
+            });
+
+            // Admin Telegram ဆီ တိုက်ရိုက် Message ပို့မယ်
+            const msg = `🚨 <b>New Withdraw Request!</b>\n\n👤 User: ${user.first_name} (ID: <code>${userId}</code>)\n⚡ Amount: <b>${amount} VOLT</b> (${(amount * 0.0001).toFixed(4)} TON)\n💼 Wallet: <code>${walletAddress}</code>`;
+            fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ chat_id: ADMIN_CHAT_ID, text: msg, parse_mode: 'HTML' })
+            });
+
+            tg.showAlert("✅ Withdraw တင်ပြီးပါပြီ! Admin မှ စစ်ဆေးပြီး ၂၄ နာရီအတွင်း လွှဲပေးပါမည်။");
+        };
+
+        initUser();
+    </script>
+
     <style>
-        body {
-            background-color: #0d0f12;
-            color: #ffffff;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            user-select: none;
-            overflow-x: hidden;
-        }
-        .thunder-card {
-            background: radial-gradient(circle at center, #2b2410 0%, #121418 75%);
-            border: 1px solid #3a321d;
-            box-shadow: 0 0 25px rgba(250, 204, 21, 0.12);
-        }
-        .glass-box {
-            background: #16191f;
-            border: 1px solid #262b34;
-        }
-        .gold-glow {
-            text-shadow: 0 0 15px rgba(250, 204, 21, 0.6);
-        }
-        .tab-active {
-            color: #facc15;
-            border-top: 2px solid #facc15;
-        }
+        body { background-color: #0d0f12; color: #ffffff; font-family: sans-serif; user-select: none; }
+        .thunder-card { background: radial-gradient(circle at center, #2b2410 0%, #121418 75%); border: 1px solid #3a321d; }
+        .glass-box { background: #16191f; border: 1px solid #262b34; }
+        .tab-active { color: #facc15; border-top: 2px solid #facc15; }
     </style>
 </head>
 <body class="pb-24">
 
-    <!-- Top Header: Profile & TON Wallet -->
+    <!-- Header -->
     <div class="p-3">
         <div class="glass-box rounded-full px-3 py-2 flex items-center justify-between">
             <div class="flex items-center space-x-2.5">
-                <img id="user-avatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=Volt" class="w-9 h-9 rounded-full bg-pink-600 p-0.5" alt="Avatar">
+                <img id="user-avatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=Volt" class="w-9 h-9 rounded-full bg-pink-600 p-0.5">
                 <div>
-                    <div id="user-name" class="text-sm font-bold leading-tight">User</div>
-                    <div id="user-username" class="text-xs text-gray-400">@username</div>
+                    <div id="user-name" class="text-sm font-bold leading-tight">Loading...</div>
+                    <div id="user-username" class="text-xs text-gray-400">@user</div>
                 </div>
             </div>
-            <!-- TON Connect Button Container -->
             <div id="ton-connect"></div>
         </div>
     </div>
 
-    <!-- TAB 1: HOME -->
+    <!-- HOME TAB -->
     <div id="tab-home" class="px-3 space-y-3">
-        <!-- Main Voltage Card -->
-        <div class="thunder-card rounded-2xl p-6 text-center relative overflow-hidden">
+        <div class="thunder-card rounded-2xl p-6 text-center">
             <h1 class="text-3xl font-extrabold tracking-wider text-white">VOLT</h1>
             <p class="text-[11px] tracking-widest text-yellow-400/80 uppercase mt-1">Feel The Thunder • Earn The Charge</p>
 
-            <div class="mt-7 mb-2 text-xs text-gray-400 tracking-widest">YOUR VOLTAGE</div>
+            <div class="mt-6 mb-2 text-xs text-gray-400 tracking-widest">YOUR VOLTAGE</div>
             <div class="flex items-center justify-center space-x-3">
-                <div class="w-12 h-12 rounded-full bg-yellow-500/20 border border-yellow-400 flex items-center justify-center shadow-lg shadow-yellow-500/30">
+                <div class="w-12 h-12 rounded-full bg-yellow-500/20 border border-yellow-400 flex items-center justify-center">
                     <i class="fa-solid fa-bolt text-2xl text-yellow-400"></i>
                 </div>
-                <span id="volt-balance" class="text-5xl font-black gold-glow">0</span>
-                <span class="bg-white/10 border border-white/20 text-xs font-bold px-2.5 py-1 rounded-full text-gray-200">VOLT</span>
+                <span id="volt-balance" class="text-5xl font-black">0</span>
+                <span class="bg-white/10 border border-white/20 text-xs font-bold px-2.5 py-1 rounded-full">VOLT</span>
             </div>
 
-            <div class="mt-4 text-sm text-gray-300 flex items-center justify-center space-x-1.5">
-                <span>≈ <span id="ton-equiv">0.0000</span></span>
-                <span class="w-4 h-4 rounded-full bg-sky-500 inline-flex items-center justify-center text-[10px] text-white font-bold">▼</span>
-            </div>
+            <div class="mt-4 text-sm text-gray-300">≈ <span id="ton-equiv">0.0000</span> TON</div>
             <div class="text-xs text-gray-500 mt-0.5">≈ $<span id="usd-equiv">0.00</span></div>
         </div>
 
-        <!-- Earn & Withdraw Buttons -->
         <div class="grid grid-cols-2 gap-3">
-            <button onclick="watchAd()" class="glass-box active:scale-95 transition rounded-xl py-3.5 font-bold text-sm flex items-center justify-center space-x-2 hover:border-yellow-500/50">
+            <button onclick="watchAd()" class="glass-box active:scale-95 transition rounded-xl py-3.5 font-bold text-sm flex items-center justify-center space-x-2">
                 <i class="fa-solid fa-bolt text-yellow-400"></i>
                 <span>Earn (+5 VOLT)</span>
             </button>
-            <button onclick="switchTab('withdraw')" class="glass-box active:scale-95 transition rounded-xl py-3.5 font-bold text-sm flex items-center justify-center space-x-2 hover:border-yellow-500/50">
+            <button onclick="switchTab('withdraw')" class="glass-box active:scale-95 transition rounded-xl py-3.5 font-bold text-sm flex items-center justify-center space-x-2">
                 <i class="fa-solid fa-wallet text-yellow-400"></i>
                 <span>Withdraw</span>
             </button>
         </div>
 
-        <!-- TON Balance Box -->
-        <div class="glass-box rounded-xl p-3.5 flex items-center justify-between">
-            <div class="flex items-center space-x-3">
-                <div class="w-9 h-9 rounded-full bg-sky-500/20 border border-sky-400 flex items-center justify-center text-sky-400 font-bold">▼</div>
-                <div>
-                    <div class="text-xs text-gray-400">TON Balance</div>
-                    <div class="font-bold text-base"><span id="ton-balance">0.0000</span> TON</div>
-                </div>
-            </div>
-            <button onclick="switchTab('withdraw')" class="w-9 h-9 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-lg font-bold">+</button>
-        </div>
-
-        <!-- Daily Bonus Box -->
         <div class="glass-box rounded-xl p-3.5 flex items-center justify-between">
             <div class="flex items-center space-x-3">
                 <div class="w-10 h-10 rounded-xl bg-yellow-500/10 border border-yellow-500/30 flex items-center justify-center text-yellow-400 text-lg">
@@ -117,22 +276,11 @@
                     <div class="text-xs text-gray-400">Come back every day • +10 VOLT</div>
                 </div>
             </div>
-            <button id="daily-btn" onclick="claimDaily()" class="bg-sky-500 hover:bg-sky-600 active:scale-95 transition text-white font-bold text-xs px-5 py-2.5 rounded-xl">
-                Claim
-            </button>
-        </div>
-
-        <!-- Promo Code Box -->
-        <div class="glass-box rounded-xl p-3.5">
-            <div class="text-xs text-gray-400 mb-2">Have a promo code?</div>
-            <div class="flex space-x-2">
-                <input id="promo-input" type="text" placeholder="Enter code (e.g. VOLT2026)" class="flex-1 bg-black/40 border border-gray-700 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-yellow-400">
-                <button onclick="applyPromo()" class="bg-yellow-500 text-black font-bold text-xs px-4 py-2 rounded-lg">Apply</button>
-            </div>
+            <button id="daily-btn" onclick="claimDaily()" class="bg-sky-500 text-white font-bold text-xs px-5 py-2.5 rounded-xl">Claim</button>
         </div>
     </div>
 
-    <!-- TAB 2: TASKS -->
+    <!-- TASKS TAB -->
     <div id="tab-tasks" class="px-3 space-y-3 hidden">
         <h2 class="text-lg font-bold px-1">Earn More VOLT</h2>
         <div class="glass-box rounded-xl p-3.5 flex items-center justify-between">
@@ -151,14 +299,14 @@
         </div>
     </div>
 
-    <!-- TAB 3: REFERRALS -->
+    <!-- REFERRALS TAB -->
     <div id="tab-referrals" class="px-3 space-y-3 hidden">
         <div class="thunder-card rounded-2xl p-5 text-center">
             <i class="fa-solid fa-users text-3xl text-yellow-400 mb-2"></i>
-            <h2 class="text-lg font-bold">Invite Friends</h2>
-            <p class="text-xs text-gray-400 mt-1">Earn 10% of your friends' VOLT earnings forever!</p>
+            <h2 class="text-lg font-bold">Invite Friends (+25 VOLT)</h2>
+            <p class="text-xs text-gray-400 mt-1">Total Invited: <span id="ref-count" class="text-yellow-400 font-bold">0</span> friends</p>
             <div class="mt-4 bg-black/50 border border-gray-700 rounded-xl p-3 text-xs break-all text-gray-300" id="ref-link">
-                Loading referral link...
+                Loading...
             </div>
             <button onclick="copyRef()" class="mt-3 w-full bg-yellow-500 text-black font-bold py-2.5 rounded-xl text-sm">
                 Copy Invite Link
@@ -166,171 +314,35 @@
         </div>
     </div>
 
-    <!-- TAB 4: WITHDRAW -->
+    <!-- WITHDRAW TAB -->
     <div id="tab-withdraw" class="px-3 space-y-3 hidden">
         <h2 class="text-lg font-bold px-1">Withdraw TON</h2>
         <div class="glass-box rounded-xl p-4 space-y-3">
-            <div class="text-xs text-gray-400">1,000 VOLT = 0.10 TON (Min Withdraw: 1,000 VOLT)</div>
-            <div>
-                <label class="text-xs text-gray-400">Amount (VOLT)</label>
-                <input id="withdraw-amount" type="number" placeholder="1000" class="w-full mt-1 bg-black/40 border border-gray-700 rounded-lg px-3 py-2.5 text-sm">
-            </div>
+            <div class="text-xs text-gray-400">1,000 VOLT = 0.10 TON (Min: 1,000 VOLT)</div>
+            <input id="withdraw-amount" type="number" placeholder="1000" class="w-full bg-black/40 border border-gray-700 rounded-lg px-3 py-2.5 text-sm">
             <button onclick="requestWithdraw()" class="w-full bg-sky-500 text-white font-bold py-3 rounded-xl text-sm">
                 Submit Withdraw Request
             </button>
         </div>
     </div>
 
-    <!-- Bottom Navigation Bar -->
+    <!-- Bottom Nav -->
     <div class="fixed bottom-0 left-0 right-0 bg-[#121418] border-t border-gray-800 px-2 py-2 flex justify-around items-center z-50">
         <button onclick="switchTab('home')" id="nav-home" class="flex flex-col items-center text-xs py-1 px-3 tab-active">
-            <i class="fa-solid fa-house text-base mb-1"></i>
-            <span>Home</span>
+            <i class="fa-solid fa-house text-base mb-1"></i><span>Home</span>
         </button>
         <button onclick="switchTab('tasks')" id="nav-tasks" class="flex flex-col items-center text-xs text-gray-400 py-1 px-3">
-            <i class="fa-solid fa-list-check text-base mb-1"></i>
-            <span>Tasks</span>
+            <i class="fa-solid fa-list-check text-base mb-1"></i><span>Tasks</span>
         </button>
         <button onclick="switchTab('referrals')" id="nav-referrals" class="flex flex-col items-center text-xs text-gray-400 py-1 px-3">
-            <i class="fa-solid fa-user-group text-base mb-1"></i>
-            <span>Referrals</span>
+            <i class="fa-solid fa-user-group text-base mb-1"></i><span>Referrals</span>
         </button>
         <button onclick="switchTab('withdraw')" id="nav-withdraw" class="flex flex-col items-center text-xs text-gray-400 py-1 px-3">
-            <i class="fa-solid fa-wallet text-base mb-1"></i>
-            <span>Withdraw</span>
+            <i class="fa-solid fa-wallet text-base mb-1"></i><span>Withdraw</span>
         </button>
     </div>
 
     <script>
-        // 1. Initialize Telegram WebApp
-        const tg = window.Telegram.WebApp;
-        tg.expand();
-        tg.ready();
-
-        // Bot Username (သင့် Bot Username ပြောင်းထည့်ပါ)
-        const BOT_USERNAME = "Ad_VOLT_bot"; 
-        // Adsgram Block ID (Adsgram မှာရတဲ့ Block ID ထည့်ပါ)
-        const ADSGRAM_BLOCK_ID = "1234"; 
-
-        // Load User Info from Telegram
-        const user = tg.initDataUnsafe?.user || { id: 12345678, first_name: "Kim", username: "Dragonchou18" };
-        document.getElementById('user-name').innerText = user.first_name;
-        document.getElementById('user-username').innerText = user.username ? `@${user.username}` : `ID: ${user.id}`;
-        if (user.photo_url) document.getElementById('user-avatar').src = user.photo_url;
-        document.getElementById('ref-link').innerText = `https://t.me/${BOT_USERNAME}/app?startapp=${user.id}`;
-
-        // 2. Initialize TON Connect
-        const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
-            manifestUrl: 'https://ton-connect.github.io/demo-dapp-with-react-ui/tonconnect-manifest.json',
-            buttonRootId: 'ton-connect'
-        });
-
-        // 3. State Management (LocalStorage - နောက်ပိုင်း Firebase/Supabase နဲ့ ချိတ်ရန်)
-        let volt = parseInt(localStorage.getItem('volt_balance')) || 0;
-        let lastDaily = localStorage.getItem('last_daily') || "";
-
-        function updateUI() {
-            document.getElementById('volt-balance').innerText = volt.toLocaleString();
-            const tonVal = (volt * 0.0001).toFixed(4);
-            const usdVal = (tonVal * 5.2).toFixed(2); // Approx TON price
-            document.getElementById('ton-equiv').innerText = tonVal;
-            document.getElementById('usd-equiv').innerText = usdVal;
-            localStorage.setItem('volt_balance', volt);
-
-            const today = new Date().toDateString();
-            const dailyBtn = document.getElementById('daily-btn');
-            if (lastDaily === today) {
-                dailyBtn.innerText = "Claimed";
-                dailyBtn.classList.replace('bg-sky-500', 'bg-gray-700');
-                dailyBtn.disabled = true;
-            }
-        }
-
-        // 4. Watch Ad Function (Adsgram Integration)
-        function watchAd() {
-            if (window.Adsgram) {
-                const AdController = window.Adsgram.init({ blockId: ADSGRAM_BLOCK_ID });
-                AdController.show().then((result) => {
-                    // ကြော်ငြာပြီးဆုံးသွားရင် Point ပေါင်းပေးမယ်
-                    volt += 5;
-                    updateUI();
-                    tg.showAlert("🎉 +5 VOLT earned from watching ad!");
-                }).catch((error) => {
-                    // စမ်းသပ်နေတုန်း Ad မရှိသေးရင် Demo အနေနဲ့ Point ပေးထားမယ်
-                    volt += 5;
-                    updateUI();
-                    tg.showAlert("Demo Mode: +5 VOLT added! (Connect real Adsgram Block ID for live ads)");
-                });
-            } else {
-                volt += 5;
-                updateUI();
-                tg.showAlert("+5 VOLT added!");
-            }
-        }
-
-        // 5. Daily Bonus
-        function claimDaily() {
-            const today = new Date().toDateString();
-            if (lastDaily !== today) {
-                volt += 10;
-                lastDaily = today;
-                localStorage.setItem('last_daily', today);
-                updateUI();
-                tg.showAlert("⚡ Daily Bonus +10 VOLT claimed!");
-            }
-        }
-
-        // 6. Promo Code
-        function applyPromo() {
-            const code = document.getElementById('promo-input').value.trim().toUpperCase();
-            if (code === "VOLT2026" && !localStorage.getItem('promo_used')) {
-                volt += 50;
-                localStorage.setItem('promo_used', 'true');
-                updateUI();
-                tg.showAlert("🎁 Promo Code Applied! +50 VOLT");
-            } else {
-                tg.showAlert("Invalid or already used promo code!");
-            }
-        }
-
-        // 7. Complete Task
-        function completeTask(reward, url) {
-            tg.openTelegramLink(url);
-            setTimeout(() => {
-                volt += reward;
-                updateUI();
-                tg.showAlert(`Task completed! +${reward} VOLT`);
-            }, 3000);
-        }
-
-        // 8. Copy Referral Link
-        function copyRef() {
-            const link = document.getElementById('ref-link').innerText;
-            navigator.clipboard.writeText(link);
-            tg.showAlert("Referral link copied to clipboard!");
-        }
-
-        // 9. Withdraw Request
-        function requestWithdraw() {
-            const amount = parseInt(document.getElementById('withdraw-amount').value);
-            if (!tonConnectUI.connected) {
-                tg.showAlert("Please connect your TON Wallet first!");
-                return;
-            }
-            if (!amount || amount < 1000) {
-                tg.showAlert("Minimum withdraw is 1,000 VOLT!");
-                return;
-            }
-            if (amount > volt) {
-                tg.showAlert("Insufficient VOLT balance!");
-                return;
-            }
-            volt -= amount;
-            updateUI();
-            tg.showAlert("✅ Withdraw request submitted! Admin will process within 24 hours.");
-        }
-
-        // Navigation Switcher
         function switchTab(tab) {
             ['home', 'tasks', 'referrals', 'withdraw'].forEach(t => {
                 document.getElementById(`tab-${t}`).classList.add('hidden');
@@ -341,8 +353,6 @@
             document.getElementById(`nav-${tab}`).classList.add('tab-active');
             document.getElementById(`nav-${tab}`).classList.remove('text-gray-400');
         }
-
-        updateUI();
     </script>
 </body>
 </html>
