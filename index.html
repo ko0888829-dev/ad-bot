@@ -112,7 +112,10 @@
         <div id="tab-tasks" class="hidden space-y-3">
             <div class="flex items-center justify-between">
                 <h2 class="font-bold text-lg">Earn More VOLT</h2>
-                <button onclick="loadGlobalFromCloud()" class="text-xs text-yellow-400 underline">Refresh</button>
+                <button onclick="syncAllFromCloud()" class="text-xs text-yellow-400 underline">Refresh</button>
+            </div>
+            <div class="text-[11px] text-gray-400 bg-white/5 p-2.5 rounded-lg">
+                💡 Join the channel first, then tap <b>Verify</b> to claim your VOLT reward.
             </div>
             <div id="tasks-list" class="space-y-3"></div>
         </div>
@@ -122,7 +125,17 @@
             <div class="volt-card rounded-2xl p-5 text-center space-y-3">
                 <i data-lucide="users" class="w-10 h-10 text-yellow-400 mx-auto"></i>
                 <h2 class="font-bold text-lg">Invite Friends & Earn</h2>
-                <p class="text-xs text-gray-400">Get <span class="text-yellow-400 font-bold">+200 VOLT</span> for every friend who joins using your link!</p>
+                <p class="text-xs text-gray-400">Get <span class="text-yellow-400 font-bold">+50 VOLT</span> for every friend who joins using your link!</p>
+                <div class="grid grid-cols-2 gap-2 text-center my-2">
+                    <div class="p-2.5 rounded-lg bg-black/40 border border-white/10">
+                        <div class="text-[10px] text-gray-400">Invited Friends</div>
+                        <div id="ref-count" class="text-lg font-black text-white">0</div>
+                    </div>
+                    <div class="p-2.5 rounded-lg bg-black/40 border border-white/10">
+                        <div class="text-[10px] text-gray-400">Ref Earnings</div>
+                        <div id="ref-earned" class="text-lg font-black text-yellow-400">0 VOLT</div>
+                    </div>
+                </div>
                 <div class="p-3 rounded-lg bg-black/40 border border-white/10 text-xs font-mono text-gray-300 break-all" id="ref-link">
                     https://t.me/Ad_Airdrop_bot?start=ref
                 </div>
@@ -159,22 +172,22 @@
                 <h2 class="font-bold text-lg text-yellow-400 flex items-center gap-2">
                     <i data-lucide="crown" class="w-5 h-5"></i> Admin Control Panel
                 </h2>
-                <span class="text-[10px] px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 font-mono">DB CONNECTED</span>
+                <span class="text-[10px] px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 font-mono">OWNER ONLY</span>
             </div>
 
-            <!-- Payout Channel & Admin DM Config (Synced to Cloud for All Users) -->
+            <!-- Payout Channel & Admin DM Config -->
             <div class="volt-card rounded-xl p-4 space-y-3 border-emerald-500/30">
                 <div class="font-bold text-sm text-emerald-400 flex items-center gap-1.5">
-                    <i data-lucide="send" class="w-4 h-4"></i> Payout Channel & Admin Alert Settings
+                    <i data-lucide="send" class="w-4 h-4"></i> Bot Token & Channel Settings
                 </div>
                 <div class="text-[11px] text-gray-400">
-                    Bot Token တစ်ခါ Save လိုက်တာနဲ့ ဘယ် User မဆို Withdraw နှိပ်တိုင်း Channel ထဲရော သင့် DM ဆီပါ အလိုအလျောက် စာပို့ပေးပါမယ်။
+                    Task Join စစ်ဆေးဖို့နဲ့ Withdraw Alert ပို့ဖို့ Bot Token ထည့်ထားပါ (Task Channel တိုင်းမှာ Bot ကို Admin ပေးထားရပါမယ်)။
                 </div>
                 <input id="admin-bot-token" type="text" placeholder="Bot Token (123456:ABC-DEF...)" class="w-full p-2.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white font-mono">
-                <input id="admin-channel-id" type="text" value="@GoldenSteal" placeholder="Public Channel (@GoldenSteal)" class="w-full p-2.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white font-mono">
+                <input id="admin-channel-id" type="text" value="@GoldenSteal" placeholder="Payout Channel (@GoldenSteal)" class="w-full p-2.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white font-mono">
                 <input id="admin-chat-id" type="text" placeholder="Your Admin Telegram ID (e.g. 123456789)" class="w-full p-2.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white font-mono">
                 <button onclick="saveTelegramConfig()" class="w-full py-2.5 rounded-lg bg-emerald-400 text-black font-bold text-xs">
-                    Save Cloud Notification Config
+                    Save Cloud Bot Config
                 </button>
             </div>
 
@@ -195,11 +208,11 @@
                 </div>
             </div>
 
-            <!-- Add Global Sponsor Task -->
+            <!-- Add Global Sponsor Task (With Channel Username for Join Check) -->
             <div class="volt-card rounded-xl p-4 space-y-3">
-                <div class="font-bold text-sm text-white">Add Global Task (Shows for ALL Users)</div>
-                <input id="new-task-title" type="text" placeholder="Task Title (e.g. Join VIP Channel)" class="w-full p-2.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white">
-                <input id="new-task-url" type="text" placeholder="Link (https://t.me/...)" class="w-full p-2.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white">
+                <div class="font-bold text-sm text-white">Add Channel Task (Auto-Verify Join)</div>
+                <input id="new-task-title" type="text" placeholder="Task Title (e.g. Join Sponsor Channel)" class="w-full p-2.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white">
+                <input id="new-task-url" type="text" placeholder="Channel Link (e.g. https://t.me/GoldenSteal)" class="w-full p-2.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white">
                 <div class="flex gap-2">
                     <input id="new-task-reward" type="number" placeholder="Reward VOLT (e.g. 100)" class="flex-1 p-2.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white">
                     <button onclick="adminAddTask()" class="px-4 py-2.5 rounded-lg bg-emerald-400 text-black font-bold text-xs">
@@ -220,13 +233,13 @@
                 </div>
             </div>
 
-            <!-- Pending Withdrawals (With Full Copyable Address!) -->
+            <!-- All Users Withdrawal Requests -->
             <div class="volt-card rounded-xl p-4 space-y-2">
                 <div class="flex items-center justify-between">
-                    <div class="font-bold text-sm text-white">Withdrawal Requests</div>
-                    <button onclick="loadGlobalFromCloud()" class="text-xs text-yellow-400 underline">Refresh</button>
+                    <div class="font-bold text-sm text-white">All Users Withdrawal Requests</div>
+                    <button onclick="loadWithdrawalsFromCloud()" class="text-xs text-yellow-400 underline">Refresh</button>
                 </div>
-                <div id="admin-withdraw-list" class="text-xs text-gray-400 space-y-2">No pending requests.</div>
+                <div id="admin-withdraw-list" class="text-xs text-gray-400 space-y-2">Loading requests...</div>
             </div>
         </div>
 
@@ -265,11 +278,13 @@
         }
 
         // ==========================================
-        // 1. HARDCODED FIREBASE REALTIME DB & OWNER LOCK
+        // 1. CONFIG & OWNER SECURITY
         // ==========================================
         const FIREBASE_DB_URL = "https://adpro-bot-default-rtdb.firebaseio.com";
         const OWNER_USERNAMES = ['dragonchou18'];
         const OWNER_IDS = [];
+        const REF_REWARD = 50; // Referral Reward = 50 VOLT
+        const MIN_AD_SECONDS = 12; // Must watch at least 12 seconds to get ad reward
 
         const user = tg?.initDataUnsafe?.user || { id: 'demo_user', first_name: 'Kim', username: 'Dragonchou18' };
         const isOwner = OWNER_USERNAMES.includes((user.username || '').toLowerCase()) || OWNER_IDS.includes(Number(user.id));
@@ -282,68 +297,239 @@
             { id: 'tg_channel', title: 'Join Official Payout Channel', reward: 100, url: 'https://t.me/GoldenSteal' }
         ];
 
-        const USER_STORAGE_KEY = `volt_user_${user.id}`;
+        const USER_STORAGE_KEY = `volt_u_${user.id}`;
         let userState = JSON.parse(localStorage.getItem(USER_STORAGE_KEY)) || {
             balance: 0,
             lastDaily: null,
             completedTasks: [],
-            adsWatched: 0
+            adsWatched: 0,
+            refCount: 0,
+            refEarned: 0,
+            referredBy: null
         };
 
-        let globalData = JSON.parse(localStorage.getItem('volt_global_cache')) || {
+        let globalConfig = JSON.parse(localStorage.getItem('volt_cfg_cache')) || {
             adReward: 50,
             useAdsgram: false,
             botToken: '',
             channelId: '@GoldenSteal',
             adminChatId: '',
-            tasks: DEFAULT_TASKS,
-            withdrawals: []
+            tasks: DEFAULT_TASKS
         };
 
-        function saveUserState() {
+        let allWithdrawals = []; // Stored in separate Firebase node /withdrawals.json so NO ONE gets overwritten!
+        let openedTasks = {}; // Tracks if user clicked Start before Verify
+
+        // ==========================================
+        // 2. CLOUD SYNC (SEPARATE NODES: /config, /users/{id}, /withdrawals)
+        // ==========================================
+        async function saveUserToCloud() {
             localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userState));
             updateUI();
-        }
-
-        async function syncGlobalToCloud() {
-            localStorage.setItem('volt_global_cache', JSON.stringify(globalData));
-            updateUI();
+            if (user.id === 'demo_user') return;
             try {
-                await fetch(`${FIREBASE_DB_URL}/volt_global.json`, {
-                    method: 'PUT',
+                await fetch(`${FIREBASE_DB_URL}/users/${user.id}.json`, {
+                    method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(globalData)
+                    body: JSON.stringify({
+                        name: user.first_name || 'User',
+                        username: user.username || '',
+                        balance: userState.balance,
+                        refCount: userState.refCount || 0,
+                        refEarned: userState.refEarned || 0,
+                        referredBy: userState.referredBy || null
+                    })
                 });
-            } catch (e) {
-                console.error('Cloud sync save error:', e);
-            }
+            } catch (e) { console.error(e); }
         }
 
-        async function loadGlobalFromCloud() {
+        async function loadUserFromCloud() {
+            if (user.id === 'demo_user') return;
             try {
-                const res = await fetch(`${FIREBASE_DB_URL}/volt_global.json`);
+                const res = await fetch(`${FIREBASE_DB_URL}/users/${user.id}.json`);
                 const data = await res.json();
                 if (data) {
-                    globalData = {
+                    // Sync referral earnings added by friends from cloud
+                    if (typeof data.balance === 'number' && data.balance > userState.balance) {
+                        userState.balance = data.balance;
+                    }
+                    if (typeof data.refCount === 'number') userState.refCount = data.refCount;
+                    if (typeof data.refEarned === 'number') userState.refEarned = data.refEarned;
+                    if (data.referredBy) userState.referredBy = data.referredBy;
+                    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userState));
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        async function saveConfigToCloud() {
+            localStorage.setItem('volt_cfg_cache', JSON.stringify(globalConfig));
+            updateUI();
+            try {
+                await fetch(`${FIREBASE_DB_URL}/config.json`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(globalConfig)
+                });
+            } catch (e) { console.error(e); }
+        }
+
+        async function loadConfigFromCloud() {
+            try {
+                const res = await fetch(`${FIREBASE_DB_URL}/config.json`);
+                const data = await res.json();
+                if (data) {
+                    globalConfig = {
                         adReward: data.adReward || 50,
                         useAdsgram: !!data.useAdsgram,
                         botToken: data.botToken || '',
                         channelId: data.channelId || '@GoldenSteal',
                         adminChatId: data.adminChatId || '',
-                        tasks: Array.isArray(data.tasks) && data.tasks.length > 0 ? data.tasks : DEFAULT_TASKS,
-                        withdrawals: Array.isArray(data.withdrawals) ? data.withdrawals : []
+                        tasks: Array.isArray(data.tasks) && data.tasks.length > 0 ? data.tasks : DEFAULT_TASKS
                     };
-                    localStorage.setItem('volt_global_cache', JSON.stringify(globalData));
-                    updateUI();
+                    localStorage.setItem('volt_cfg_cache', JSON.stringify(globalConfig));
                 } else if (isOwner) {
-                    // Initialize DB on first load
-                    await syncGlobalToCloud();
+                    await saveConfigToCloud();
                 }
+            } catch (e) { console.error(e); }
+        }
+
+        async function loadWithdrawalsFromCloud() {
+            try {
+                const res = await fetch(`${FIREBASE_DB_URL}/withdrawals.json`);
+                const data = await res.json();
+                if (data && typeof data === 'object') {
+                    allWithdrawals = Object.entries(data)
+                        .map(([key, val]) => ({ firebaseKey: key, ...val }))
+                        .reverse();
+                } else {
+                    allWithdrawals = [];
+                }
+                updateUI();
+            } catch (e) { console.error(e); }
+        }
+
+        async function syncAllFromCloud() {
+            await loadConfigFromCloud();
+            await loadUserFromCloud();
+            if (isOwner) await loadWithdrawalsFromCloud();
+            updateUI();
+        }
+
+        // ==========================================
+        // 3. REFERRAL SYSTEM (+50 VOLT)
+        // ==========================================
+        async function processReferralOnStart() {
+            const startParam = tg?.initDataUnsafe?.start_param;
+            if (!startParam || user.id === 'demo_user') return;
+            const referrerId = String(startParam).trim();
+            if (!referrerId || referrerId === String(user.id) || userState.referredBy) return;
+
+            userState.referredBy = referrerId;
+            await saveUserToCloud();
+
+            try {
+                const res = await fetch(`${FIREBASE_DB_URL}/users/${referrerId}.json`);
+                const refUser = await res.json();
+                const newBal = ((refUser && refUser.balance) || 0) + REF_REWARD;
+                const newCount = ((refUser && refUser.refCount) || 0) + 1;
+                const newEarned = ((refUser && refUser.refEarned) || 0) + REF_REWARD;
+
+                await fetch(`${FIREBASE_DB_URL}/users/${referrerId}.json`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        balance: newBal,
+                        refCount: newCount,
+                        refEarned: newEarned
+                    })
+                });
+            } catch (e) { console.error('Ref reward error:', e); }
+        }
+
+        // ==========================================
+        // 4. REAL CHANNEL JOIN VERIFICATION (getChatMember)
+        // ==========================================
+        function extractChannelUsername(url) {
+            if (!url) return null;
+            const clean = url.trim().replace(/\/$/, '');
+            if (clean.startsWith('@')) return clean;
+            const match = clean.match(/t\.me\/([a-zA-Z0-9_]+)/);
+            if (match && match[1] && !match[1].startsWith('+')) {
+                return '@' + match[1];
+            }
+            return null;
+        }
+
+        async function verifyChannelMembership(channelUsername) {
+            if (!globalConfig.botToken || !channelUsername || user.id === 'demo_user') {
+                return { verified: false, reason: 'no_bot_token' };
+            }
+            try {
+                const res = await fetch(`https://api.telegram.org/bot${globalConfig.botToken}/getChatMember`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: channelUsername,
+                        user_id: Number(user.id)
+                    })
+                });
+                const data = await res.json();
+                if (!data.ok) {
+                    console.warn('getChatMember failed:', data.description);
+                    return { verified: false, reason: data.description || 'api_error' };
+                }
+                const status = data.result?.status;
+                const isMember = ['member', 'administrator', 'creator'].includes(status);
+                return { verified: isMember, status };
             } catch (e) {
-                console.error('Cloud sync load error:', e);
+                return { verified: false, reason: 'network_error' };
             }
         }
 
+        async function handleTaskAction(id, reward, url) {
+            if (userState.completedTasks.includes(id)) return;
+
+            // Step 1: First tap opens the channel link
+            if (!openedTasks[id]) {
+                openedTasks[id] = true;
+                window.open(url, '_blank');
+                updateUI();
+                return;
+            }
+
+            // Step 2: Second tap verifies actual channel membership via Bot API
+            const btn = document.getElementById(`task-btn-${id}`);
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = 'Checking...';
+            }
+
+            const channelUsername = extractChannelUsername(url);
+            if (channelUsername && globalConfig.botToken) {
+                const check = await verifyChannelMembership(channelUsername);
+                if (!check.verified) {
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.textContent = 'Verify';
+                    }
+                    const alertMsg = check.reason && check.reason.includes('chat not found')
+                        ? 'Bot is not Admin in this channel yet. Ask Admin to add Bot!'
+                        : `You haven't joined ${channelUsername} yet! Please join first and tap Verify.`;
+                    return tg?.showAlert ? tg.showAlert(alertMsg) : alert(alertMsg);
+                }
+            }
+
+            // Verified! Grant Reward
+            userState.completedTasks.push(id);
+            userState.balance += reward;
+            await saveUserToCloud();
+            if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+            if (tg?.showAlert) tg.showAlert(`Verified! +${reward} VOLT added!`);
+        }
+
+        // ==========================================
+        // 5. UI RENDERING
+        // ==========================================
         function maskAddress(addr) {
             if (!addr || addr.length < 12) return addr;
             return `${addr.slice(0, 6)}....${addr.slice(-6)}`;
@@ -355,9 +541,9 @@
         }
 
         async function sendTelegramMessage(chatId, text) {
-            if (!globalData.botToken || !chatId) return false;
+            if (!globalConfig.botToken || !chatId) return false;
             try {
-                const res = await fetch(`https://api.telegram.org/bot${globalData.botToken}/sendMessage`, {
+                const res = await fetch(`https://api.telegram.org/bot${globalConfig.botToken}/sendMessage`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -370,21 +556,19 @@
                 const data = await res.json();
                 return data.ok;
             } catch (err) {
-                console.error('Telegram API Error:', err);
                 return false;
             }
         }
 
-        // ==========================================
-        // 2. UI RENDERING
-        // ==========================================
         function updateUI() {
             document.getElementById('user-name').textContent = user.first_name || 'VOLT User';
             document.getElementById('user-username').textContent = user.username ? `@${user.username}` : `ID: ${user.id}`;
             document.getElementById('user-avatar').textContent = (user.first_name || 'V')[0].toUpperCase();
             document.getElementById('volt-balance').textContent = userState.balance.toLocaleString();
             document.getElementById('ref-link').textContent = `https://t.me/Ad_Airdrop_bot?start=${user.id}`;
-            document.getElementById('watch-ad-text').textContent = `Watch Ad (+${globalData.adReward} VOLT)`;
+            document.getElementById('ref-count').textContent = userState.refCount || 0;
+            document.getElementById('ref-earned').textContent = `${(userState.refEarned || 0).toLocaleString()} VOLT`;
+            document.getElementById('watch-ad-text').textContent = `Watch Ad (+${globalConfig.adReward} VOLT)`;
 
             const today = new Date().toDateString();
             const dailyBtn = document.getElementById('daily-btn');
@@ -394,20 +578,26 @@
                 dailyBtn.className = 'px-4 py-2 rounded-lg bg-white/10 text-gray-400 font-bold text-xs';
             }
 
-            // Global Tasks List
+            // Render Tasks
             const tasksList = document.getElementById('tasks-list');
             tasksList.innerHTML = '';
-            (globalData.tasks || DEFAULT_TASKS).forEach(task => {
+            (globalConfig.tasks || DEFAULT_TASKS).forEach(task => {
                 const isDone = userState.completedTasks.includes(task.id);
+                const isOpened = !!openedTasks[task.id];
+                let btnLabel = isDone ? 'Done' : (isOpened ? 'Verify' : 'Join');
+                let btnClass = isDone
+                    ? 'bg-white/10 text-gray-400'
+                    : (isOpened ? 'bg-emerald-400 text-black' : 'bg-yellow-400 text-black');
+
                 tasksList.innerHTML += `
                     <div class="volt-card rounded-xl p-4 flex items-center justify-between">
                         <div>
                             <div class="font-bold text-sm">${task.title}</div>
                             <div class="text-xs text-yellow-400">+${task.reward} VOLT</div>
                         </div>
-                        <button onclick="completeTask('${task.id}', ${task.reward}, '${task.url}')" ${isDone ? 'disabled' : ''}
-                            class="px-4 py-2 rounded-lg font-bold text-xs ${isDone ? 'bg-white/10 text-gray-400' : 'bg-yellow-400 text-black'}">
-                            ${isDone ? 'Done' : 'Start'}
+                        <button id="task-btn-${task.id}" onclick="handleTaskAction('${task.id}', ${task.reward}, '${task.url}')" ${isDone ? 'disabled' : ''}
+                            class="px-4 py-2 rounded-lg font-bold text-xs ${btnClass}">
+                            ${btnLabel}
                         </button>
                     </div>
                 `;
@@ -415,16 +605,16 @@
 
             // Owner Admin Panel
             if (isOwner) {
-                if (globalData.botToken) document.getElementById('admin-bot-token').value = globalData.botToken;
-                document.getElementById('admin-channel-id').value = globalData.channelId || '@GoldenSteal';
-                if (globalData.adminChatId) {
-                    document.getElementById('admin-chat-id').value = globalData.adminChatId;
+                if (globalConfig.botToken) document.getElementById('admin-bot-token').value = globalConfig.botToken;
+                document.getElementById('admin-channel-id').value = globalConfig.channelId || '@GoldenSteal';
+                if (globalConfig.adminChatId) {
+                    document.getElementById('admin-chat-id').value = globalConfig.adminChatId;
                 } else if (user.id !== 'demo_user') {
                     document.getElementById('admin-chat-id').value = String(user.id);
                 }
 
                 const toggleBtn = document.getElementById('toggle-adsgram-btn');
-                if (globalData.useAdsgram) {
+                if (globalConfig.useAdsgram) {
                     toggleBtn.textContent = 'ON (Adsgram + Monetag)';
                     toggleBtn.className = 'px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-300 font-bold';
                 } else {
@@ -433,7 +623,7 @@
                 }
 
                 const adminTasksDiv = document.getElementById('admin-tasks-manage');
-                adminTasksDiv.innerHTML = (globalData.tasks || []).map((t, i) => `
+                adminTasksDiv.innerHTML = (globalConfig.tasks || []).map((t, i) => `
                     <div class="flex items-center justify-between text-xs bg-black/30 p-2 rounded">
                         <span class="truncate">${t.title} (+${t.reward})</span>
                         <button onclick="adminDeleteTask(${i})" class="text-red-400 font-bold px-2">Delete</button>
@@ -441,12 +631,12 @@
                 `).join('');
 
                 const adminWList = document.getElementById('admin-withdraw-list');
-                if (globalData.withdrawals && globalData.withdrawals.length > 0) {
-                    adminWList.innerHTML = globalData.withdrawals.map((w, idx) => `
+                if (allWithdrawals.length > 0) {
+                    adminWList.innerHTML = allWithdrawals.map((w, idx) => `
                         <div class="p-3 rounded-lg bg-black/50 border border-white/10 space-y-2">
                             <div class="flex items-center justify-between">
                                 <span class="text-white font-bold">${w.userName} (${w.userTag || ''})</span>
-                                <span class="text-yellow-400 font-bold">${w.amount.toLocaleString()} VOLT (${w.tonAmount} TON)</span>
+                                <span class="text-yellow-400 font-bold">${Number(w.amount).toLocaleString()} VOLT (${w.tonAmount} TON)</span>
                             </div>
                             <div onclick="copyText('${w.address}', 'Wallet address copied!')" class="p-2 rounded bg-white/5 border border-white/10 font-mono text-[11px] text-emerald-300 break-all cursor-pointer flex items-center justify-between gap-2">
                                 <span>${w.address}</span>
@@ -460,41 +650,53 @@
                             </div>
                         </div>
                     `).join('');
+                } else {
+                    adminWList.innerHTML = '<div class="text-gray-500">No withdrawal requests yet.</div>';
                 }
             }
         }
 
         // ==========================================
-        // 3. AD ENGINE
+        // 6. AD ENGINE (STRICT FULL-WATCH CHECK)
         // ==========================================
         function rewardUserForAd() {
-            userState.balance += globalData.adReward;
+            userState.balance += globalConfig.adReward;
             userState.adsWatched += 1;
-            saveUserState();
+            saveUserToCloud();
             const statusEl = document.getElementById('ad-status-msg');
-            statusEl.textContent = `+${globalData.adReward} VOLT earned!`;
+            statusEl.textContent = `+${globalConfig.adReward} VOLT earned!`;
             statusEl.className = 'text-xs text-emerald-400 mt-2 h-4';
             if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
         }
 
         function playMonetag(btn, btnText, statusEl) {
-            statusEl.textContent = 'Loading video ad...';
+            statusEl.textContent = `Watch the full ad (${MIN_AD_SECONDS}s+) to earn VOLT...`;
             if (typeof window.show_12250655 === 'function') {
+                const startTime = Date.now();
                 window.show_12250655()
-                    .then(() => rewardUserForAd())
+                    .then(() => {
+                        const elapsedSec = (Date.now() - startTime) / 1000;
+                        if (elapsedSec < MIN_AD_SECONDS) {
+                            statusEl.textContent = `Ad closed too early (${Math.floor(elapsedSec)}s). Watch completely for reward!`;
+                            statusEl.className = 'text-xs text-red-400 mt-2 h-4';
+                            if (tg?.showAlert) tg.showAlert('You closed the ad too early! Please watch the full ad to earn VOLT.');
+                        } else {
+                            rewardUserForAd();
+                        }
+                    })
                     .catch(() => {
-                        statusEl.textContent = 'Ad closed or unavailable. Try again.';
+                        statusEl.textContent = 'Ad closed or unavailable. No reward given.';
                         statusEl.className = 'text-xs text-amber-400 mt-2 h-4';
                     })
                     .finally(() => {
                         btn.disabled = false;
-                        btnText.textContent = `Watch Ad (+${globalData.adReward} VOLT)`;
+                        btnText.textContent = `Watch Ad (+${globalConfig.adReward} VOLT)`;
                     });
             } else {
                 statusEl.textContent = 'Ad SDK loading... Tap again in 2s.';
                 statusEl.className = 'text-xs text-amber-400 mt-2 h-4';
                 btn.disabled = false;
-                btnText.textContent = `Watch Ad (+${globalData.adReward} VOLT)`;
+                btnText.textContent = `Watch Ad (+${globalConfig.adReward} VOLT)`;
             }
         }
 
@@ -503,13 +705,13 @@
             const btnText = document.getElementById('watch-ad-text');
             const statusEl = document.getElementById('ad-status-msg');
             btn.disabled = true;
-            btnText.textContent = 'Loading Ad...';
+            btnText.textContent = 'Watching Ad...';
 
-            if (globalData.useAdsgram && window.Adsgram) {
+            if (globalConfig.useAdsgram && window.Adsgram) {
                 try {
                     const AdController = window.Adsgram.init({ blockId: "59456" });
                     AdController.show()
-                        .then((res) => (res && res.done) ? (rewardUserForAd(), btn.disabled = false, btnText.textContent = `Watch Ad (+${globalData.adReward} VOLT)`) : playMonetag(btn, btnText, statusEl))
+                        .then((res) => (res && res.done) ? (rewardUserForAd(), btn.disabled = false, btnText.textContent = `Watch Ad (+${globalConfig.adReward} VOLT)`) : playMonetag(btn, btnText, statusEl))
                         .catch(() => playMonetag(btn, btnText, statusEl));
                 } catch (e) {
                     playMonetag(btn, btnText, statusEl);
@@ -520,7 +722,7 @@
         }
 
         // ==========================================
-        // 4. WITHDRAW SYSTEM (CLOUD SYNC + CHANNEL + ADMIN DM)
+        // 7. WITHDRAW SYSTEM (SEPARATE FIREBASE POST - NEVER OVERWRITES!)
         // ==========================================
         async function submitWithdraw() {
             const addr = document.getElementById('ton-address').value.trim();
@@ -539,7 +741,7 @@
             wBtn.disabled = true;
             wBtn.textContent = 'Sending Request...';
 
-            await loadGlobalFromCloud();
+            await loadConfigFromCloud();
 
             const tonAmount = (amt / 10000).toFixed(4);
             const userName = user.first_name || 'User';
@@ -547,98 +749,115 @@
             const masked = maskAddress(addr);
 
             userState.balance -= amt;
-            saveUserState();
+            await saveUserToCloud();
 
-            globalData.withdrawals.unshift({
+            const newRequest = {
+                userId: String(user.id),
                 userName,
                 userTag,
                 address: addr,
                 amount: amt,
                 tonAmount,
                 status: 'Pending',
-                date: new Date().toLocaleDateString()
-            });
-            await syncGlobalToCloud();
+                date: new Date().toLocaleDateString(),
+                timestamp: Date.now()
+            };
 
+            // POST to /withdrawals.json creates a unique key per user request (zero overwrite!)
+            try {
+                await fetch(`${FIREBASE_DB_URL}/withdrawals.json`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newRequest)
+                });
+            } catch (e) { console.error('Withdraw save error:', e); }
+
+            // Public Channel Post
             const publicMsg = `<b>CMMST PAYOUT</b>\n💸 <b>NEW PAYOUT REQUEST</b>\n\n👤 User: ${userName}\n⚡ Amount: ${amt.toLocaleString()} VOLT (${tonAmount} TON)\n💼 Wallet: <code>${masked}</code>\n⏳ Status: Processing...\n\n🤖 Earn now: @Ad_Airdrop_bot`;
-            const sentPublic = await sendTelegramMessage(globalData.channelId, publicMsg);
+            const sentPublic = await sendTelegramMessage(globalConfig.channelId, publicMsg);
 
-            if (globalData.adminChatId) {
+            // Private Admin DM with Full Copyable Address
+            if (globalConfig.adminChatId) {
                 const adminMsg = `🔔 <b>ADMIN PAYOUT ALERT</b>\n\n👤 User: ${userName} (${userTag})\n💎 Send: <b>${tonAmount} TON</b> (${amt.toLocaleString()} VOLT)\n📋 <b>Full Wallet (Tap to copy):</b>\n<code>${addr}</code>`;
-                await sendTelegramMessage(globalData.adminChatId, adminMsg);
+                await sendTelegramMessage(globalConfig.adminChatId, adminMsg);
             }
 
             wBtn.disabled = false;
             wBtn.textContent = 'Request Payout';
             document.getElementById('withdraw-amount').value = '';
+            if (isOwner) await loadWithdrawalsFromCloud();
 
             if (tg?.showAlert) {
-                tg.showAlert(sentPublic ? `Payout request submitted to ${globalData.channelId}!` : 'Withdrawal request submitted!');
+                tg.showAlert(sentPublic ? `Payout request submitted to ${globalConfig.channelId}!` : 'Withdrawal request submitted!');
             }
         }
 
         async function approveWithdraw(idx) {
-            const w = globalData.withdrawals[idx];
-            if (!w || w.status === 'Paid') return;
+            const w = allWithdrawals[idx];
+            if (!w || w.status === 'Paid' || !w.firebaseKey) return;
+
             w.status = 'Paid';
-            await syncGlobalToCloud();
+            updateUI();
+
+            try {
+                await fetch(`${FIREBASE_DB_URL}/withdrawals/${w.firebaseKey}.json`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: 'Paid' })
+                });
+            } catch (e) { console.error(e); }
 
             const masked = maskAddress(w.address);
             const msg = `✅ <b>PAYOUT COMPLETED!</b>\n\n👤 User: ${w.userName}\n💎 Paid: ${w.tonAmount} TON\n💼 Wallet: <code>${masked}</code>\n\n🔥 Join & Earn: @Ad_Airdrop_bot`;
-            await sendTelegramMessage(globalData.channelId, msg);
+            await sendTelegramMessage(globalConfig.channelId, msg);
             if (tg?.showAlert) tg.showAlert('Marked as Paid & posted to Channel!');
         }
 
         // ==========================================
-        // 5. OWNER ADMIN ACTIONS
+        // 8. OWNER ADMIN ACTIONS
         // ==========================================
         async function saveTelegramConfig() {
-            globalData.botToken = document.getElementById('admin-bot-token').value.trim();
-            globalData.channelId = document.getElementById('admin-channel-id').value.trim() || '@GoldenSteal';
-            globalData.adminChatId = document.getElementById('admin-chat-id').value.trim();
-            await syncGlobalToCloud();
-            if (tg?.showAlert) tg.showAlert('Saved to Cloud! All users now synced.');
+            globalConfig.botToken = document.getElementById('admin-bot-token').value.trim();
+            globalConfig.channelId = document.getElementById('admin-channel-id').value.trim() || '@GoldenSteal';
+            globalConfig.adminChatId = document.getElementById('admin-chat-id').value.trim();
+            await saveConfigToCloud();
+            if (tg?.showAlert) tg.showAlert('Bot Config Saved! Channel join verification & alerts active.');
         }
 
-        function toggleAdsgram() { globalData.useAdsgram = !globalData.useAdsgram; syncGlobalToCloud(); }
+        function toggleAdsgram() { globalConfig.useAdsgram = !globalConfig.useAdsgram; saveConfigToCloud(); }
         function updateAdReward() {
             const val = parseInt(document.getElementById('admin-new-reward').value, 10);
-            if (val && val > 0) { globalData.adReward = val; document.getElementById('admin-new-reward').value = ''; syncGlobalToCloud(); }
+            if (val && val > 0) { globalConfig.adReward = val; document.getElementById('admin-new-reward').value = ''; saveConfigToCloud(); }
         }
         async function adminAddTask() {
             const title = document.getElementById('new-task-title').value.trim();
             const url = document.getElementById('new-task-url').value.trim();
             const reward = parseInt(document.getElementById('new-task-reward').value, 10);
             if (!title || !url || !reward) return;
-            globalData.tasks.push({ id: 'task_' + Date.now(), title, url, reward });
+            globalConfig.tasks.push({ id: 'task_' + Date.now(), title, url, reward });
             document.getElementById('new-task-title').value = '';
             document.getElementById('new-task-url').value = '';
             document.getElementById('new-task-reward').value = '';
-            await syncGlobalToCloud();
-            if (tg?.showAlert) tg.showAlert('Task added globally for ALL users!');
+            await saveConfigToCloud();
+            if (tg?.showAlert) tg.showAlert('Task added! Make sure your Bot is Admin in that channel.');
         }
         function adminDeleteTask(idx) {
-            globalData.tasks.splice(idx, 1);
-            syncGlobalToCloud();
+            globalConfig.tasks.splice(idx, 1);
+            saveConfigToCloud();
         }
         function adminAddBalance() {
             const amt = parseInt(document.getElementById('admin-add-volt').value, 10);
-            if (amt) { userState.balance += amt; document.getElementById('admin-add-volt').value = ''; saveUserState(); }
+            if (amt) { userState.balance += amt; document.getElementById('admin-add-volt').value = ''; saveUserToCloud(); }
         }
 
-        // Daily, Tasks, Refs
         function claimDaily() {
             const today = new Date().toDateString();
             if (userState.lastDaily === today) return;
             userState.lastDaily = today;
             userState.balance += 10;
-            saveUserState();
+            saveUserToCloud();
         }
-        function completeTask(id, reward, url) {
-            if (userState.completedTasks.includes(id)) return;
-            window.open(url, '_blank');
-            setTimeout(() => { userState.completedTasks.push(id); userState.balance += reward; saveUserState(); }, 2500);
-        }
+
         function copyRefLink() { copyText(document.getElementById('ref-link').textContent.trim(), 'Referral link copied!'); }
 
         function switchTab(tab) {
@@ -653,11 +872,16 @@
             const activeNav = document.getElementById(`nav-${tab}`);
             activeNav.classList.remove('text-gray-400');
             activeNav.classList.add('text-yellow-400');
-            if (tab === 'tasks' || tab === 'admin') loadGlobalFromCloud();
+            if (tab === 'tasks' || tab === 'referrals') syncAllFromCloud();
+            if (tab === 'admin') { loadConfigFromCloud(); loadWithdrawalsFromCloud(); }
         }
 
+        // Initial Boot
         updateUI();
-        loadGlobalFromCloud();
+        (async () => {
+            await syncAllFromCloud();
+            await processReferralOnStart();
+        })();
     </script>
 </body>
 </html>
