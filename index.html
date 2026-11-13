@@ -45,7 +45,7 @@
             background: conic-gradient(
                 #1e293b 0deg 60deg,
                 #ca8a04 60deg 120deg,
-                #0f766e 120deg 180deg,
+                #0e7490 120deg 180deg,
                 #065f46 180deg 240deg,
                 #1d4ed8 240deg 300deg,
                 #9333ea 300deg 360deg
@@ -57,7 +57,7 @@
             position: absolute;
             top: 50%;
             left: 50%;
-            width: 88px;
+            width: 85px;
             transform-origin: 0 0;
             font-size: 11px;
             font-weight: 900;
@@ -151,7 +151,7 @@
                         <div id="wheel-disc">
                             <div class="wheel-label" style="transform: rotate(-60deg) translateY(-50%);">25 VOLT</div>
                             <div class="wheel-label" style="transform: rotate(0deg) translateY(-50%);">50 VOLT</div>
-                            <div class="wheel-label" style="transform: rotate(60deg) translateY(-50%);">+1 SPIN 🔄</div>
+                            <div class="wheel-label" style="transform: rotate(60deg) translateY(-50%);">+1 SPIN</div>
                             <div class="wheel-label" style="transform: rotate(120deg) translateY(-50%);">100 VOLT</div>
                             <div class="wheel-label" style="transform: rotate(180deg) translateY(-50%);">250 VOLT</div>
                             <div class="wheel-label" style="transform: rotate(240deg) translateY(-50%);">1000 💎</div>
@@ -167,9 +167,9 @@
                     </button>
                 </div>
 
-                <!-- GAME 2: MYSTERY BOX (3x3 GRID WITH 2 EMPTIES & RANDOM HIGHER REWARDS) -->
+                <!-- GAME 2: MYSTERY BOX (3x3 GRID - 2 EMPTIES + 7 RANDOM) -->
                 <div id="game-panel-box" class="hidden pt-1 text-center space-y-3">
-                    <div class="text-xs text-gray-400" id="box-status">Pick 1 lucky thunder box to reveal VOLT!</div>
+                    <div class="text-xs text-gray-400" id="box-status">Pick 1 lucky thunder box (7 Prizes • 2 Empty)!</div>
                     <div id="mystery-grid" class="grid grid-cols-3 gap-2"></div>
                     <button id="box-unlock-btn" onclick="unlockExtraBox()" class="hidden w-full py-2.5 rounded-xl bg-yellow-400 text-black font-bold text-xs">
                         🎬 Watch Ad for +1 Box Pick
@@ -497,9 +497,11 @@
         let isAdPlaying = false;
         let currentWheelRotation = 0;
         let isSpinning = false;
+
+        // Mystery Box 9-slot board state (Always 2 Empties + 7 Random Prizes)
         let boxCanPick = true;
+        let boxBoard = [];
         let revealedBoxes = {};
-        let boxBoard = []; // Pre-shuffled 9-box board (always 2 Empty + 7 random rewards)
 
         // ==========================================
         // 2. CLOUD SYNC
@@ -688,4 +690,927 @@
             ['wheel', 'box', 'tap'].forEach(g => {
                 document.getElementById(`game-panel-${g}`).classList.add('hidden');
                 const btn = document.getElementById(`gbtn-${g}`);
-                btn.
+                btn.className = 'py-2 rounded-lg text-xs font-bold text-gray-400 transition-all';
+            });
+            document.getElementById(`game-panel-${gameName}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`gbtn-${gameName}`);
+            activeBtn.className = 'py-2 rounded-lg text-xs font-bold bg-yellow-400 text-black transition-all';
+            if (gameName === 'box') renderMysteryGrid();
+        }
+
+        // --- GAME 1: LUCKY WHEEL (+1 SPIN INSTEAD OF 0 VOLT!) ---
+        const WHEEL_SEGMENTS = [
+            { label: '25 VOLT', reward: 25, extraSpin: false, weight: 40, centerDeg: 30 },
+            { label: '50 VOLT', reward: 50, extraSpin: false, weight: 30, centerDeg: 90 },
+            { label: '+1 FREE SPIN', reward: 0, extraSpin: true, weight: 15, centerDeg: 150 },
+            { label: '100 VOLT', reward: 100, extraSpin: false, weight: 10, centerDeg: 210 },
+            { label: '250 VOLT', reward: 250, extraSpin: false, weight: 4, centerDeg: 270 },
+            { label: '1,000 VOLT JACKPOT!', reward: 1000, extraSpin: false, weight: 1, centerDeg: 330 }
+        ];
+
+        function pickWeightedOutcome(items) {
+            const totalWeight = items.reduce((sum, item) => sum + item.weight, 0);
+            let rand = Math.random() * totalWeight;
+            for (const item of items) {
+                if (rand < item.weight) return item;
+                rand -= item.weight;
+            }
+            return items[0];
+        }
+
+        function executeWheelSpin() {
+            if (isSpinning) return;
+            isSpinning = true;
+
+            const spinBtn = document.getElementById('spin-btn');
+            const statusEl = document.getElementById('wheel-status');
+            spinBtn.disabled = true;
+            spinBtn.textContent = 'Spinning...';
+            statusEl.textContent = 'Good luck! Spinning...';
+            statusEl.className = 'text-xs text-yellow-400 h-4';
+
+            const chosen = pickWeightedOutcome(WHEEL_SEGMENTS);
+            const targetAngle = (360 - chosen.centerDeg) % 360;
+            const currentMod = currentWheelRotation % 360;
+            const delta = (targetAngle - currentMod + 360) % 360;
+            currentWheelRotation += (360 * 6) + delta;
+
+            document.getElementById('wheel-disc').style.transform = `rotate(${currentWheelRotation}deg)`;
+
+            setTimeout(async () => {
+                isSpinning = false;
+                if (chosen.extraSpin) {
+                    userState.bonusSpins = (userState.bonusSpins || 0) + 1;
+                    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userState));
+                    statusEl.textContent = '🎉 Won +1 FREE SPIN! Tap below to spin again (No Ad)!';
+                    statusEl.className = 'text-xs text-cyan-400 font-bold h-4';
+                    if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                } else {
+                    userState.balance += chosen.reward;
+                    await saveUserToCloud();
+                    statusEl.textContent = `🎉 Won +${chosen.reward.toLocaleString()} VOLT!`;
+                    statusEl.className = 'text-xs text-emerald-400 font-bold h-4';
+                    if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                }
+                updateUI();
+            }, 3900);
+        }
+
+        function handleSpinWheel() {
+            if (isSpinning) return;
+            const today = new Date().toDateString();
+
+            // 1. Check if user won a +1 Free Spin
+            if ((userState.bonusSpins || 0) > 0) {
+                userState.bonusSpins -= 1;
+                localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userState));
+                return executeWheelSpin();
+            }
+
+            // 2. Check Daily Free Spin
+            if (userState.lastFreeSpin !== today) {
+                userState.lastFreeSpin = today;
+                localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userState));
+                return executeWheelSpin();
+            }
+
+            // 3. Otherwise require watching full ad
+            const spinBtn = document.getElementById('spin-btn');
+            const statusEl = document.getElementById('wheel-status');
+            spinBtn.disabled = true;
+            spinBtn.textContent = 'Watching Ad...';
+            statusEl.textContent = `Watch full ad (${MIN_AD_SECONDS}s+) to unlock spin...`;
+
+            runStrictVerifiedAd(
+                () => {
+                    executeWheelSpin();
+                },
+                (errMsg) => {
+                    statusEl.textContent = errMsg;
+                    statusEl.className = 'text-xs text-red-400 h-4';
+                    updateUI();
+                }
+            );
+        }
+
+        // --- GAME 2: MYSTERY BOX (9 BOXES: EXACTLY 2 EMPTIES + 7 RANDOM REWARDS, 20 VOLT = 10% ODDS) ---
+        const BOX_PRIZE_POOL = [
+            { reward: 20, weight: 10 },   // 10% chance only!
+            { reward: 50, weight: 35 },   // 35% chance
+            { reward: 80, weight: 25 },   // 25% chance
+            { reward: 120, weight: 15 },  // 15% chance
+            { reward: 250, weight: 10 },  // 10% chance
+            { reward: 500, weight: 5 }    // 5% chance
+        ];
+
+        function generateFreshBoxBoard() {
+            // Create 9 slots: 2 Empty (0) + 7 Random Weighted Prizes
+            const slots = [0, 0];
+            for (let i = 0; i < 7; i++) {
+                const picked = pickWeightedOutcome(BOX_PRIZE_POOL);
+                slots.push(picked.reward);
+            }
+            // Fisher-Yates Shuffle
+            for (let i = slots.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [slots[i], slots[j]] = [slots[j], slots[i]];
+            }
+            boxBoard = slots;
+            revealedBoxes = {};
+        }
+
+        function renderMysteryGrid() {
+            if (boxBoard.length !== 9) {
+                generateFreshBoxBoard();
+            }
+            const today = new Date().toDateString();
+            if (userState.lastFreeBox !== today && Object.keys(revealedBoxes).length === 0) {
+                boxCanPick = true;
+            }
+            const grid = document.getElementById('mystery-grid');
+            grid.innerHTML = '';
+            for (let i = 0; i < 9; i++) {
+                const rev = revealedBoxes[i];
+                if (rev !== undefined) {
+                    const isWin = rev > 0;
+                    grid.innerHTML += `
+                        <div class="h-16 rounded-xl ${isWin ? 'bg-emerald-500/20 border-emerald-400/50 text-emerald-300' : 'bg-red-500/10 border-red-500/30 text-red-400'} border flex flex-col items-center justify-center font-black text-xs">
+                            <span>${isWin ? `+${rev}` : 'Empty'}</span>
+                            <span class="text-[9px] font-normal">VOLT</span>
+                        </div>
+                    `;
+                } else {
+                    grid.innerHTML += `
+                        <button onclick="pickMysteryBox(${i})" class="h-16 rounded-xl bg-black/50 hover:bg-yellow-500/10 border border-yellow-500/25 flex flex-col items-center justify-center transition-all active:scale-95">
+                            <i data-lucide="package" class="w-5 h-5 text-yellow-400"></i>
+                            <span class="text-[9px] text-gray-400 mt-1">OPEN</span>
+                        </button>
+                    `;
+                }
+            }
+            lucide.createIcons();
+
+            const unlockBtn = document.getElementById('box-unlock-btn');
+            if (!boxCanPick) {
+                unlockBtn.classList.remove('hidden');
+            } else {
+                unlockBtn.classList.add('hidden');
+            }
+        }
+
+        async function pickMysteryBox(index) {
+            if (!boxCanPick || revealedBoxes[index] !== undefined) {
+                return tg?.showAlert ? tg.showAlert('Tap "Watch Ad for +1 Box Pick" below to open another box!') : null;
+            }
+
+            const today = new Date().toDateString();
+            if (userState.lastFreeBox !== today) {
+                userState.lastFreeBox = today;
+            }
+            boxCanPick = false;
+
+            const rewardVal = boxBoard[index];
+            revealedBoxes[index] = rewardVal;
+
+            const statusEl = document.getElementById('box-status');
+            if (rewardVal > 0) {
+                userState.balance += rewardVal;
+                await saveUserToCloud();
+                statusEl.textContent = `🎉 Found +${rewardVal} VOLT inside!`;
+                statusEl.className = 'text-xs text-emerald-400 font-bold';
+                if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+            } else {
+                localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userState));
+                statusEl.textContent = '😅 Empty box! Watch ad to open another box.';
+                statusEl.className = 'text-xs text-amber-400';
+            }
+            renderMysteryGrid();
+        }
+
+        function unlockExtraBox() {
+            const btn = document.getElementById('box-unlock-btn');
+            const statusEl = document.getElementById('box-status');
+            btn.disabled = true;
+            btn.textContent = 'Watching Ad...';
+
+            runStrictVerifiedAd(
+                () => {
+                    if (Object.keys(revealedBoxes).length >= 9) {
+                        generateFreshBoxBoard();
+                    }
+                    boxCanPick = true;
+                    btn.disabled = false;
+                    btn.textContent = '🎬 Watch Ad for +1 Box Pick';
+                    statusEl.textContent = '✅ Unlocked! Pick any box now.';
+                    statusEl.className = 'text-xs text-emerald-400';
+                    renderMysteryGrid();
+                },
+                (errMsg) => {
+                    btn.disabled = false;
+                    btn.textContent = '🎬 Watch Ad for +1 Box Pick';
+                    statusEl.textContent = errMsg;
+                    statusEl.className = 'text-xs text-red-400';
+                }
+            );
+        }
+
+        // --- GAME 3: THUNDER TAP (ENERGY CHARGE) ---
+        async function handleThunderTap() {
+            if (userState.tapEnergy <= 0) {
+                return tg?.showAlert ? tg.showAlert('Battery empty! Watch an ad to recharge battery.') : null;
+            }
+
+            userState.tapEnergy -= 1;
+            userState.tapCharge += 5;
+            if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+
+            if (userState.tapCharge >= 100) {
+                userState.tapCharge = 0;
+                userState.balance += 50;
+                await saveUserToCloud();
+                if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                if (tg?.showAlert) tg.showAlert('⚡ 100% Charged! +50 VOLT added to your balance!');
+            } else {
+                localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userState));
+                updateUI();
+            }
+        }
+
+        function rechargeTapBattery() {
+            const btn = document.getElementById('tap-recharge-btn');
+            btn.disabled = true;
+            btn.textContent = 'Watching Ad...';
+
+            runStrictVerifiedAd(
+                () => {
+                    userState.tapEnergy = 20;
+                    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userState));
+                    btn.disabled = false;
+                    btn.textContent = '⚡ Watch Ad to Recharge Battery';
+                    updateUI();
+                    if (tg?.showAlert) tg.showAlert('⚡ Battery 100% Recharged (20/20)!');
+                },
+                () => {
+                    btn.disabled = false;
+                    btn.textContent = '⚡ Watch Ad to Recharge Battery';
+                }
+            );
+        }
+
+        // ==========================================
+        // 5. HOME AD, DAILY CHECK-IN & PROMO CODE
+        // ==========================================
+        function handleWatchAd() {
+            const btn = document.getElementById('watch-ad-btn');
+            const btnText = document.getElementById('watch-ad-text');
+            const statusEl = document.getElementById('ad-status-msg');
+
+            btn.disabled = true;
+            btnText.textContent = 'Watching Ad...';
+            statusEl.textContent = `Watch full ad (${MIN_AD_SECONDS}s+) to earn +${globalConfig.adReward} VOLT...`;
+            statusEl.className = 'text-xs text-gray-400 mt-2 h-4';
+
+            runStrictVerifiedAd(
+                async () => {
+                    userState.balance += globalConfig.adReward;
+                    userState.adsWatched += 1;
+                    await saveUserToCloud();
+                    statusEl.textContent = `+${globalConfig.adReward} VOLT earned!`;
+                    statusEl.className = 'text-xs text-emerald-400 mt-2 h-4';
+                    btn.disabled = false;
+                    btnText.textContent = `Watch Ad (+${globalConfig.adReward} VOLT)`;
+                    if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                },
+                (errMsg) => {
+                    statusEl.textContent = errMsg;
+                    statusEl.className = 'text-xs text-red-400 mt-2 h-4';
+                    btn.disabled = false;
+                    btnText.textContent = `Watch Ad (+${globalConfig.adReward} VOLT)`;
+                }
+            );
+        }
+
+        function claimDaily() {
+            const today = new Date().toDateString();
+            if (userState.lastDaily === today) return;
+
+            const dailyBtn = document.getElementById('daily-btn');
+            dailyBtn.disabled = true;
+            dailyBtn.textContent = 'Ad...';
+
+            runStrictVerifiedAd(
+                async () => {
+                    userState.lastDaily = today;
+                    userState.balance += DAILY_REWARD;
+                    await saveUserToCloud();
+                    if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                    if (tg?.showAlert) tg.showAlert(`Daily Check-in complete! +${DAILY_REWARD} VOLT added.`);
+                },
+                () => {
+                    dailyBtn.disabled = false;
+                    dailyBtn.textContent = 'Claim';
+                }
+            );
+        }
+
+        async function redeemPromoCode() {
+            const input = document.getElementById('promo-code-input');
+            const btn = document.getElementById('promo-btn');
+            const statusEl = document.getElementById('promo-status-msg');
+            const code = input.value.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '');
+
+            const showPromoStatus = (msg, isErr = true) => {
+                statusEl.textContent = msg;
+                statusEl.className = `text-[11px] ${isErr ? 'text-red-400' : 'text-emerald-400'} block`;
+            };
+
+            if (!code) {
+                return showPromoStatus('Please enter a promo code first.');
+            }
+            if (userState.usedPromos.includes(code)) {
+                return showPromoStatus('You have already redeemed this promo code.');
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Checking...';
+            showPromoStatus('Verifying promo code...', false);
+
+            await loadPromosFromCloud();
+            const promo = globalPromos[code];
+
+            if (!promo || !promo.reward) {
+                btn.disabled = false;
+                btn.textContent = 'Redeem';
+                return showPromoStatus('Invalid or expired promo code.');
+            }
+
+            const usedCount = Number(promo.usedCount || 0);
+            const maxUses = Number(promo.maxUses || 0);
+            if (maxUses > 0 && usedCount >= maxUses) {
+                btn.disabled = false;
+                btn.textContent = 'Redeem';
+                return showPromoStatus('This promo code has reached its max limit.');
+            }
+
+            btn.textContent = 'Watch Ad...';
+            showPromoStatus(`Valid code (+${promo.reward} VOLT)! Watch full ad (${MIN_AD_SECONDS}s+) to claim...`, false);
+
+            runStrictVerifiedAd(
+                async () => {
+                    await loadPromosFromCloud();
+                    const freshPromo = globalPromos[code];
+                    const freshUsed = Number((freshPromo && freshPromo.usedCount) || 0);
+                    if (!freshPromo || (freshPromo.maxUses > 0 && freshUsed >= freshPromo.maxUses)) {
+                        btn.disabled = false;
+                        btn.textContent = 'Redeem';
+                        return showPromoStatus('Sorry, promo code limit just filled up.');
+                    }
+
+                    const rewardAmt = Number(freshPromo.reward);
+                    userState.usedPromos.push(code);
+                    userState.balance += rewardAmt;
+                    await saveUserToCloud();
+
+                    try {
+                        await fetch(`${FIREBASE_DB_URL}/promocodes/${code}.json`, {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ usedCount: freshUsed + 1 })
+                        });
+                    } catch (e) { console.error(e); }
+
+                    input.value = '';
+                    btn.disabled = false;
+                    btn.textContent = 'Redeem';
+                    showPromoStatus(`Success! +${rewardAmt} VOLT redeemed from ${code}!`, false);
+                    if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                    if (tg?.showAlert) tg.showAlert(`Promo Code ${code} redeemed! +${rewardAmt} VOLT added!`);
+                },
+                (errMsg) => {
+                    btn.disabled = false;
+                    btn.textContent = 'Redeem';
+                    showPromoStatus(errMsg, true);
+                }
+            );
+        }
+
+        // ==========================================
+        // 6. REFERRAL SYSTEM (+50 VOLT VIA DIRECT MINI APP LINK)
+        // ==========================================
+        async function processReferralOnStart() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const startParam = tg?.initDataUnsafe?.start_param || urlParams.get('ref') || urlParams.get('tgWebAppStartParam');
+            if (!startParam || user.id === 'demo_user') return;
+            const referrerId = String(startParam).trim();
+            if (!referrerId || referrerId === String(user.id) || userState.referredBy) return;
+
+            await loadUserFromCloud();
+            if (userState.referredBy) return;
+
+            userState.referredBy = referrerId;
+            await saveUserToCloud();
+
+            try {
+                const res = await fetch(`${FIREBASE_DB_URL}/users/${referrerId}.json`);
+                const refUser = await res.json();
+                const newBal = ((refUser && refUser.balance) || 0) + REF_REWARD;
+                const newCount = ((refUser && refUser.refCount) || 0) + 1;
+                const newEarned = ((refUser && refUser.refEarned) || 0) + REF_REWARD;
+
+                await fetch(`${FIREBASE_DB_URL}/users/${referrerId}.json`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        balance: newBal,
+                        refCount: newCount,
+                        refEarned: newEarned
+                    })
+                });
+            } catch (e) { console.error('Ref reward error:', e); }
+        }
+
+        // ==========================================
+        // 7. REAL CHANNEL JOIN VERIFICATION + USER LIMIT CHECK
+        // ==========================================
+        function extractChannelUsername(url) {
+            if (!url) return null;
+            const clean = url.trim().replace(/\/$/, '');
+            if (clean.startsWith('@')) return clean;
+            const match = clean.match(/t\.me\/([a-zA-Z0-9_]+)/);
+            if (match && match[1] && !match[1].startsWith('+')) {
+                return '@' + match[1];
+            }
+            return null;
+        }
+
+        async function verifyChannelMembership(channelUsername) {
+            if (!globalConfig.botToken || !channelUsername || user.id === 'demo_user') {
+                return { verified: false, reason: 'no_bot_token' };
+            }
+            try {
+                const res = await fetch(`https://api.telegram.org/bot${globalConfig.botToken}/getChatMember`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: channelUsername,
+                        user_id: Number(user.id)
+                    })
+                });
+                const data = await res.json();
+                if (!data.ok) {
+                    return { verified: false, reason: data.description || 'api_error' };
+                }
+                const status = data.result?.status;
+                const isMember = ['member', 'administrator', 'creator'].includes(status);
+                return { verified: isMember, status };
+            } catch (e) {
+                return { verified: false, reason: 'network_error' };
+            }
+        }
+
+        async function handleTaskAction(id, reward, url) {
+            if (userState.completedTasks.includes(id)) return;
+
+            await loadTaskStatsFromCloud();
+            const taskObj = (globalConfig.tasks || []).find(t => t.id === id);
+            const maxUsers = Number((taskObj && taskObj.maxUsers) || 0);
+            const currentCount = Number(taskStats[id] || 0);
+
+            if (maxUsers > 0 && currentCount >= maxUsers) {
+                updateUI();
+                return tg?.showAlert ? tg.showAlert('Sorry! This task has reached its maximum user limit.') : alert('Task limit full!');
+            }
+
+            if (!openedTasks[id]) {
+                openedTasks[id] = true;
+                window.open(url, '_blank');
+                updateUI();
+                return;
+            }
+
+            const btn = document.getElementById(`task-btn-${id}`);
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = 'Checking...';
+            }
+
+            const channelUsername = extractChannelUsername(url);
+            if (channelUsername && globalConfig.botToken) {
+                const check = await verifyChannelMembership(channelUsername);
+                if (!check.verified) {
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.textContent = 'Verify';
+                    }
+                    const alertMsg = check.reason && check.reason.includes('chat not found')
+                        ? 'Bot is not Admin in this channel yet. Ask Admin to add Bot!'
+                        : `You haven't joined ${channelUsername} yet! Please join first and tap Verify.`;
+                    return tg?.showAlert ? tg.showAlert(alertMsg) : alert(alertMsg);
+                }
+            }
+
+            await loadTaskStatsFromCloud();
+            const freshCount = Number(taskStats[id] || 0);
+            if (maxUsers > 0 && freshCount >= maxUsers) {
+                updateUI();
+                return tg?.showAlert ? tg.showAlert('Sorry! This task just filled up.') : alert('Task limit full!');
+            }
+
+            const updatedCount = freshCount + 1;
+            taskStats[id] = updatedCount;
+            try {
+                await fetch(`${FIREBASE_DB_URL}/task_stats.json`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ [id]: updatedCount })
+                });
+            } catch (e) { console.error(e); }
+
+            userState.completedTasks.push(id);
+            userState.balance += reward;
+            await saveUserToCloud();
+            if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+            if (tg?.showAlert) tg.showAlert(`Verified! +${reward} VOLT added!`);
+        }
+
+        // ==========================================
+        // 8. UI RENDERING
+        // ==========================================
+        function maskAddress(addr) {
+            if (!addr || addr.length < 12) return addr;
+            return `${addr.slice(0, 6)}....${addr.slice(-6)}`;
+        }
+
+        function copyText(text, label = 'Copied!') {
+            navigator.clipboard.writeText(text);
+            if (tg?.showAlert) tg.showAlert(label);
+        }
+
+        async function sendTelegramMessage(chatId, text) {
+            if (!globalConfig.botToken || !chatId) return false;
+            try {
+                const res = await fetch(`https://api.telegram.org/bot${globalConfig.botToken}/sendMessage`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: chatId,
+                        text: text,
+                        parse_mode: 'HTML',
+                        disable_web_page_preview: true
+                    })
+                });
+                const data = await res.json();
+                return data.ok;
+            } catch (err) {
+                return false;
+            }
+        }
+
+        function updateUI() {
+            document.getElementById('user-name').textContent = user.first_name || 'VOLT User';
+            document.getElementById('user-username').textContent = user.username ? `@${user.username}` : `ID: ${user.id}`;
+            document.getElementById('user-avatar').textContent = (user.first_name || 'V')[0].toUpperCase();
+            document.getElementById('volt-balance').textContent = userState.balance.toLocaleString();
+            document.getElementById('ref-link').textContent = `https://t.me/Ad_Airdrop_bot/app?startapp=${user.id}`;
+            document.getElementById('ref-count').textContent = userState.refCount || 0;
+            document.getElementById('ref-earned').textContent = `${(userState.refEarned || 0).toLocaleString()} VOLT`;
+            document.getElementById('watch-ad-text').textContent = `Watch Ad (+${globalConfig.adReward} VOLT)`;
+
+            const today = new Date().toDateString();
+
+            // Wheel Button State (Bonus Spins -> Daily Free Spin -> Watch Ad)
+            const spinBtn = document.getElementById('spin-btn');
+            if (!isSpinning) {
+                spinBtn.disabled = false;
+                if ((userState.bonusSpins || 0) > 0) {
+                    spinBtn.textContent = `🎡 Spin Free (${userState.bonusSpins} Bonus Left)`;
+                } else if (userState.lastFreeSpin !== today) {
+                    spinBtn.textContent = '🎡 Free Daily Spin';
+                } else {
+                    spinBtn.textContent = '🎬 Watch Ad for +1 Spin';
+                }
+            }
+
+            // Thunder Tap UI State
+            document.getElementById('tap-progress-txt').textContent = `${userState.tapCharge}% / 100%`;
+            document.getElementById('tap-progress-bar').style.width = `${userState.tapCharge}%`;
+            document.getElementById('tap-energy-txt').textContent = `${userState.tapEnergy}/20`;
+            const rechargeBtn = document.getElementById('tap-recharge-btn');
+            if (userState.tapEnergy <= 0) {
+                rechargeBtn.classList.remove('hidden');
+            } else {
+                rechargeBtn.classList.add('hidden');
+            }
+
+            // Daily Check-in Button
+            const dailyBtn = document.getElementById('daily-btn');
+            if (userState.lastDaily === today) {
+                dailyBtn.textContent = 'Claimed';
+                dailyBtn.disabled = true;
+                dailyBtn.className = 'px-4 py-2 rounded-lg bg-white/10 text-gray-400 font-bold text-xs';
+            }
+
+            // Tasks List
+            const tasksList = document.getElementById('tasks-list');
+            tasksList.innerHTML = '';
+            (globalConfig.tasks || DEFAULT_TASKS).forEach(task => {
+                const isDone = userState.completedTasks.includes(task.id);
+                const isOpened = !!openedTasks[task.id];
+                const maxUsers = Number(task.maxUsers || 0);
+                const doneCount = Number(taskStats[task.id] || 0);
+                const isFull = !isDone && maxUsers > 0 && doneCount >= maxUsers;
+
+                let btnLabel = isDone ? 'Done' : (isFull ? 'Full' : (isOpened ? 'Verify' : 'Join'));
+                let btnClass = (isDone || isFull)
+                    ? 'bg-white/10 text-gray-400'
+                    : (isOpened ? 'bg-emerald-400 text-black' : 'bg-yellow-400 text-black');
+
+                const limitBadge = maxUsers > 0
+                    ? `<span class="text-[11px] font-mono ${isFull ? 'text-red-400' : 'text-gray-400'}">• 👥 ${doneCount.toLocaleString()}/${maxUsers.toLocaleString()}</span>`
+                    : `<span class="text-[11px] font-mono text-gray-400">• 👥 ${doneCount.toLocaleString()} joined</span>`;
+
+                tasksList.innerHTML += `
+                    <div class="volt-card rounded-xl p-4 flex items-center justify-between gap-2">
+                        <div class="min-w-0">
+                            <div class="font-bold text-sm truncate">${task.title}</div>
+                            <div class="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                                <span class="text-xs text-yellow-400 font-semibold">+${task.reward} VOLT</span>
+                                ${limitBadge}
+                            </div>
+                        </div>
+                        <button id="task-btn-${task.id}" onclick="handleTaskAction('${task.id}', ${task.reward}, '${task.url}')" ${(isDone || isFull) ? 'disabled' : ''}
+                            class="px-4 py-2 rounded-lg font-bold text-xs shrink-0 ${btnClass}">
+                            ${btnLabel}
+                        </button>
+                    </div>
+                `;
+            });
+
+            if (isOwner) {
+                if (globalConfig.botToken) document.getElementById('admin-bot-token').value = globalConfig.botToken;
+                document.getElementById('admin-channel-id').value = globalConfig.channelId || '@GoldenSteal';
+                if (globalConfig.adminChatId) {
+                    document.getElementById('admin-chat-id').value = globalConfig.adminChatId;
+                } else if (user.id !== 'demo_user') {
+                    document.getElementById('admin-chat-id').value = String(user.id);
+                }
+
+                const toggleBtn = document.getElementById('toggle-adsgram-btn');
+                if (globalConfig.useAdsgram) {
+                    toggleBtn.textContent = 'ON (Adsgram + Monetag)';
+                    toggleBtn.className = 'px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-300 font-bold';
+                } else {
+                    toggleBtn.textContent = 'OFF (Monetag Direct)';
+                    toggleBtn.className = 'px-3 py-1.5 rounded-lg bg-yellow-500/20 text-yellow-300 font-bold';
+                }
+
+                const adminPromosDiv = document.getElementById('admin-promos-list');
+                const promoEntries = Object.entries(globalPromos || {});
+                if (promoEntries.length > 0) {
+                    adminPromosDiv.innerHTML = promoEntries.map(([code, p]) => `
+                        <div class="flex items-center justify-between text-xs bg-black/40 p-2 rounded border border-white/5">
+                            <div>
+                                <span onclick="copyText('${code}', 'Code ${code} copied!')" class="font-mono font-bold text-yellow-400 cursor-pointer">${code}</span>
+                                <span class="text-gray-300 ml-1.5">+${p.reward} VOLT</span>
+                                <span class="text-[10px] text-gray-500 ml-1">(${p.usedCount || 0}/${p.maxUses || '∞'})</span>
+                            </div>
+                            <button onclick="adminDeletePromo('${code}')" class="text-red-400 font-bold px-2">Delete</button>
+                        </div>
+                    `).join('');
+                } else {
+                    adminPromosDiv.innerHTML = '<div class="text-[11px] text-gray-500">No active promo codes.</div>';
+                }
+
+                const adminTasksDiv = document.getElementById('admin-tasks-manage');
+                adminTasksDiv.innerHTML = (globalConfig.tasks || []).map((t, i) => {
+                    const doneCount = Number(taskStats[t.id] || 0);
+                    const limitTxt = Number(t.maxUsers || 0) > 0 ? `${doneCount}/${t.maxUsers}` : `${doneCount}/∞`;
+                    return `
+                        <div class="flex items-center justify-between text-xs bg-black/30 p-2 rounded">
+                            <span class="truncate">${t.title} (+${t.reward}) <span class="text-yellow-400 font-mono">[${limitTxt}]</span></span>
+                            <button onclick="adminDeleteTask(${i})" class="text-red-400 font-bold px-2 shrink-0">Delete</button>
+                        </div>
+                    `;
+                }).join('');
+
+                const adminWList = document.getElementById('admin-withdraw-list');
+                if (allWithdrawals.length > 0) {
+                    adminWList.innerHTML = allWithdrawals.map((w, idx) => `
+                        <div class="p-3 rounded-lg bg-black/50 border border-white/10 space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="text-white font-bold">${w.userName} (${w.userTag || ''})</span>
+                                <span class="text-yellow-400 font-bold">${Number(w.amount).toLocaleString()} VOLT (${w.tonAmount} TON)</span>
+                            </div>
+                            <div onclick="copyText('${w.address}', 'Wallet address copied!')" class="p-2 rounded bg-white/5 border border-white/10 font-mono text-[11px] text-emerald-300 break-all cursor-pointer flex items-center justify-between gap-2">
+                                <span>${w.address}</span>
+                                <span class="text-[10px] bg-white/10 px-1.5 py-0.5 rounded text-white shrink-0">Copy</span>
+                            </div>
+                            <div class="flex items-center justify-between pt-1">
+                                <span class="text-[10px] text-gray-400">${w.date || ''} • Status: ${w.status}</span>
+                                ${w.status === 'Pending'
+                                    ? `<button onclick="approveWithdraw(${idx})" class="px-3 py-1.5 rounded bg-emerald-400 text-black font-bold text-xs">Mark Paid & Post</button>`
+                                    : '<span class="text-emerald-400 text-xs font-bold">✅ Paid</span>'}
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    adminWList.innerHTML = '<div class="text-gray-500">No withdrawal requests yet.</div>';
+                }
+            }
+        }
+
+        // ==========================================
+        // 9. WITHDRAW SYSTEM (10,000 VOLT = 0.10 TON, MIN 10,000 VOLT)
+        // ==========================================
+        async function submitWithdraw() {
+            const addr = document.getElementById('ton-address').value.trim();
+            const amt = parseInt(document.getElementById('withdraw-amount').value, 10);
+            if (!addr || addr.length < 20) {
+                return tg?.showAlert ? tg.showAlert('Please enter a valid TON wallet address.') : alert('Invalid address');
+            }
+            if (!amt || amt < 10000) {
+                return tg?.showAlert ? tg.showAlert('Minimum withdrawal is 10,000 VOLT (0.10 TON).') : alert('Minimum 10,000 VOLT');
+            }
+            if (amt > userState.balance) {
+                return tg?.showAlert ? tg.showAlert('Insufficient VOLT balance.') : alert('Insufficient balance');
+            }
+
+            const wBtn = document.getElementById('withdraw-btn');
+            wBtn.disabled = true;
+            wBtn.textContent = 'Sending Request...';
+
+            await loadConfigFromCloud();
+
+            // 10,000 VOLT = 0.10 TON => amt / 100000
+            const tonAmount = (amt / 100000).toFixed(4);
+            const userName = user.first_name || 'User';
+            const userTag = user.username ? `@${user.username}` : `ID:${user.id}`;
+            const masked = maskAddress(addr);
+
+            userState.balance -= amt;
+            await saveUserToCloud();
+
+            const newRequest = {
+                userId: String(user.id),
+                userName,
+                userTag,
+                address: addr,
+                amount: amt,
+                tonAmount,
+                status: 'Pending',
+                date: new Date().toLocaleDateString(),
+                timestamp: Date.now()
+            };
+
+            try {
+                await fetch(`${FIREBASE_DB_URL}/withdrawals.json`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newRequest)
+                });
+            } catch (e) { console.error('Withdraw save error:', e); }
+
+            const publicMsg = `<b>CMMST PAYOUT</b>\n💸 <b>NEW PAYOUT REQUEST</b>\n\n👤 User: ${userName}\n⚡ Amount: ${amt.toLocaleString()} VOLT (${tonAmount} TON)\n💼 Wallet: <code>${masked}</code>\n⏳ Status: Processing...\n\n🤖 Earn now: @Ad_Airdrop_bot`;
+            const sentPublic = await sendTelegramMessage(globalConfig.channelId, publicMsg);
+
+            if (globalConfig.adminChatId) {
+                const adminMsg = `🔔 <b>ADMIN PAYOUT ALERT</b>\n\n👤 User: ${userName} (${userTag})\n💎 Send: <b>${tonAmount} TON</b> (${amt.toLocaleString()} VOLT)\n📋 <b>Full Wallet (Tap to copy):</b>\n<code>${addr}</code>`;
+                await sendTelegramMessage(globalConfig.adminChatId, adminMsg);
+            }
+
+            wBtn.disabled = false;
+            wBtn.textContent = 'Request Payout';
+            document.getElementById('withdraw-amount').value = '';
+            if (isOwner) await loadWithdrawalsFromCloud();
+
+            if (tg?.showAlert) {
+                tg.showAlert(sentPublic ? `Payout request submitted to ${globalConfig.channelId}!` : 'Withdrawal request submitted!');
+            }
+        }
+
+        async function approveWithdraw(idx) {
+            const w = allWithdrawals[idx];
+            if (!w || w.status === 'Paid' || !w.firebaseKey) return;
+
+            w.status = 'Paid';
+            updateUI();
+
+            try {
+                await fetch(`${FIREBASE_DB_URL}/withdrawals/${w.firebaseKey}.json`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: 'Paid' })
+                });
+            } catch (e) { console.error(e); }
+
+            const masked = maskAddress(w.address);
+            const msg = `✅ <b>PAYOUT COMPLETED!</b>\n\n👤 User: ${w.userName}\n💎 Paid: ${w.tonAmount} TON\n💼 Wallet: <code>${masked}</code>\n\n🔥 Join & Earn: @Ad_Airdrop_bot`;
+            await sendTelegramMessage(globalConfig.channelId, msg);
+            if (tg?.showAlert) tg.showAlert('Marked as Paid & posted to Channel!');
+        }
+
+        // ==========================================
+        // 10. OWNER ADMIN ACTIONS
+        // ==========================================
+        async function adminAddPromoCode() {
+            const code = document.getElementById('new-promo-code').value.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '');
+            const reward = parseInt(document.getElementById('new-promo-reward').value, 10);
+            const maxUses = parseInt(document.getElementById('new-promo-limit').value, 10) || 100;
+
+            if (!code || !reward || reward <= 0) {
+                return tg?.showAlert ? tg.showAlert('Enter valid code and VOLT reward!') : alert('Invalid promo inputs');
+            }
+
+            try {
+                await fetch(`${FIREBASE_DB_URL}/promocodes/${code}.json`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        reward,
+                        maxUses,
+                        usedCount: 0,
+                        createdAt: Date.now()
+                    })
+                });
+                document.getElementById('new-promo-code').value = '';
+                document.getElementById('new-promo-reward').value = '';
+                document.getElementById('new-promo-limit').value = '';
+                await loadPromosFromCloud();
+                if (tg?.showAlert) tg.showAlert(`Promo code ${code} (+${reward} VOLT) created!`);
+            } catch (e) { console.error(e); }
+        }
+
+        async function adminDeletePromo(code) {
+            try {
+                await fetch(`${FIREBASE_DB_URL}/promocodes/${code}.json`, { method: 'DELETE' });
+                await loadPromosFromCloud();
+            } catch (e) { console.error(e); }
+        }
+
+        async function saveTelegramConfig() {
+            globalConfig.botToken = document.getElementById('admin-bot-token').value.trim();
+            globalConfig.channelId = document.getElementById('admin-channel-id').value.trim() || '@GoldenSteal';
+            globalConfig.adminChatId = document.getElementById('admin-chat-id').value.trim();
+            await saveConfigToCloud();
+            if (tg?.showAlert) tg.showAlert('Bot Config Saved! Channel join verification & alerts active.');
+        }
+
+        function toggleAdsgram() { globalConfig.useAdsgram = !globalConfig.useAdsgram; saveConfigToCloud(); }
+        function updateAdReward() {
+            const val = parseInt(document.getElementById('admin-new-reward').value, 10);
+            if (val && val > 0) { globalConfig.adReward = val; document.getElementById('admin-new-reward').value = ''; saveConfigToCloud(); }
+        }
+        async function adminAddTask() {
+            const title = document.getElementById('new-task-title').value.trim();
+            const url = document.getElementById('new-task-url').value.trim();
+            const reward = parseInt(document.getElementById('new-task-reward').value, 10);
+            const maxUsers = parseInt(document.getElementById('new-task-limit').value, 10) || 0;
+            if (!title || !url || !reward) return;
+
+            const newId = 'task_' + Date.now();
+            globalConfig.tasks.push({ id: newId, title, url, reward, maxUsers });
+            document.getElementById('new-task-title').value = '';
+            document.getElementById('new-task-url').value = '';
+            document.getElementById('new-task-reward').value = '';
+            document.getElementById('new-task-limit').value = '';
+            await saveConfigToCloud();
+            const limitInfo = maxUsers > 0 ? ` (Limit: ${maxUsers} users)` : ' (Unlimited)';
+            if (tg?.showAlert) tg.showAlert(`Task added${limitInfo}! Make sure your Bot is Admin in that channel.`);
+        }
+        function adminDeleteTask(idx) {
+            globalConfig.tasks.splice(idx, 1);
+            saveConfigToCloud();
+        }
+        function adminAddBalance() {
+            const amt = parseInt(document.getElementById('admin-add-volt').value, 10);
+            if (amt) { userState.balance += amt; document.getElementById('admin-add-volt').value = ''; saveUserToCloud(); }
+        }
+
+        function copyRefLink() { copyText(document.getElementById('ref-link').textContent.trim(), 'Referral link copied!'); }
+
+        function switchTab(tab) {
+            if (tab === 'admin' && !isOwner) return;
+            ['home', 'tasks', 'referrals', 'withdraw', 'admin'].forEach(t => {
+                document.getElementById(`tab-${t}`).classList.add('hidden');
+                const nav = document.getElementById(`nav-${t}`);
+                nav.classList.remove('text-yellow-400');
+                nav.classList.add('text-gray-400');
+            });
+            document.getElementById(`tab-${tab}`).classList.remove('hidden');
+            const activeNav = document.getElementById(`nav-${tab}`);
+            activeNav.classList.remove('text-gray-400');
+            activeNav.classList.add('text-yellow-400');
+            if (tab === 'tasks' || tab === 'referrals') syncAllFromCloud();
+            if (tab === 'admin') { loadConfigFromCloud(); loadTaskStatsFromCloud(); loadPromosFromCloud(); loadWithdrawalsFromCloud(); }
+        }
+
+        // Initial Boot
+        generateFreshBoxBoard();
+        updateUI();
+        (async () => {
+            await syncAllFromCloud();
+            await processReferralOnStart();
+        })();
+    </script>
+</body>
+</html>
