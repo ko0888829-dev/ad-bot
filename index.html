@@ -208,7 +208,7 @@
                 </div>
             </div>
 
-            <!-- Add Global Sponsor Task (With Channel Username for Join Check) -->
+            <!-- Add Global Sponsor Task -->
             <div class="volt-card rounded-xl p-4 space-y-3">
                 <div class="font-bold text-sm text-white">Add Channel Task (Auto-Verify Join)</div>
                 <input id="new-task-title" type="text" placeholder="Task Title (e.g. Join Sponsor Channel)" class="w-full p-2.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white">
@@ -283,8 +283,8 @@
         const FIREBASE_DB_URL = "https://adpro-bot-default-rtdb.firebaseio.com";
         const OWNER_USERNAMES = ['dragonchou18'];
         const OWNER_IDS = [];
-        const REF_REWARD = 50; // Referral Reward = 50 VOLT
-        const MIN_AD_SECONDS = 12; // Must watch at least 12 seconds to get ad reward
+        const REF_REWARD = 50;
+        const MIN_AD_SECONDS = 12;
 
         const user = tg?.initDataUnsafe?.user || { id: 'demo_user', first_name: 'Kim', username: 'Dragonchou18' };
         const isOwner = OWNER_USERNAMES.includes((user.username || '').toLowerCase()) || OWNER_IDS.includes(Number(user.id));
@@ -317,11 +317,11 @@
             tasks: DEFAULT_TASKS
         };
 
-        let allWithdrawals = []; // Stored in separate Firebase node /withdrawals.json so NO ONE gets overwritten!
-        let openedTasks = {}; // Tracks if user clicked Start before Verify
+        let allWithdrawals = [];
+        let openedTasks = {};
 
         // ==========================================
-        // 2. CLOUD SYNC (SEPARATE NODES: /config, /users/{id}, /withdrawals)
+        // 2. CLOUD SYNC
         // ==========================================
         async function saveUserToCloud() {
             localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userState));
@@ -349,7 +349,6 @@
                 const res = await fetch(`${FIREBASE_DB_URL}/users/${user.id}.json`);
                 const data = await res.json();
                 if (data) {
-                    // Sync referral earnings added by friends from cloud
                     if (typeof data.balance === 'number' && data.balance > userState.balance) {
                         userState.balance = data.balance;
                     }
@@ -419,10 +418,15 @@
         // 3. REFERRAL SYSTEM (+50 VOLT)
         // ==========================================
         async function processReferralOnStart() {
-            const startParam = tg?.initDataUnsafe?.start_param;
+            const urlParams = new URLSearchParams(window.location.search);
+            const startParam = tg?.initDataUnsafe?.start_param || urlParams.get('ref') || urlParams.get('tgWebAppStartParam');
             if (!startParam || user.id === 'demo_user') return;
             const referrerId = String(startParam).trim();
             if (!referrerId || referrerId === String(user.id) || userState.referredBy) return;
+
+            // Check cloud first in case webhook already credited it
+            await loadUserFromCloud();
+            if (userState.referredBy) return;
 
             userState.referredBy = referrerId;
             await saveUserToCloud();
@@ -447,7 +451,7 @@
         }
 
         // ==========================================
-        // 4. REAL CHANNEL JOIN VERIFICATION (getChatMember)
+        // 4. REAL CHANNEL JOIN VERIFICATION
         // ==========================================
         function extractChannelUsername(url) {
             if (!url) return null;
@@ -475,7 +479,6 @@
                 });
                 const data = await res.json();
                 if (!data.ok) {
-                    console.warn('getChatMember failed:', data.description);
                     return { verified: false, reason: data.description || 'api_error' };
                 }
                 const status = data.result?.status;
@@ -489,7 +492,6 @@
         async function handleTaskAction(id, reward, url) {
             if (userState.completedTasks.includes(id)) return;
 
-            // Step 1: First tap opens the channel link
             if (!openedTasks[id]) {
                 openedTasks[id] = true;
                 window.open(url, '_blank');
@@ -497,7 +499,6 @@
                 return;
             }
 
-            // Step 2: Second tap verifies actual channel membership via Bot API
             const btn = document.getElementById(`task-btn-${id}`);
             if (btn) {
                 btn.disabled = true;
@@ -519,7 +520,6 @@
                 }
             }
 
-            // Verified! Grant Reward
             userState.completedTasks.push(id);
             userState.balance += reward;
             await saveUserToCloud();
@@ -578,7 +578,6 @@
                 dailyBtn.className = 'px-4 py-2 rounded-lg bg-white/10 text-gray-400 font-bold text-xs';
             }
 
-            // Render Tasks
             const tasksList = document.getElementById('tasks-list');
             tasksList.innerHTML = '';
             (globalConfig.tasks || DEFAULT_TASKS).forEach(task => {
@@ -603,7 +602,6 @@
                 `;
             });
 
-            // Owner Admin Panel
             if (isOwner) {
                 if (globalConfig.botToken) document.getElementById('admin-bot-token').value = globalConfig.botToken;
                 document.getElementById('admin-channel-id').value = globalConfig.channelId || '@GoldenSteal';
@@ -657,7 +655,7 @@
         }
 
         // ==========================================
-        // 6. AD ENGINE (STRICT FULL-WATCH CHECK)
+        // 6. AD ENGINE
         // ==========================================
         function rewardUserForAd() {
             userState.balance += globalConfig.adReward;
@@ -722,7 +720,7 @@
         }
 
         // ==========================================
-        // 7. WITHDRAW SYSTEM (SEPARATE FIREBASE POST - NEVER OVERWRITES!)
+        // 7. WITHDRAW SYSTEM
         // ==========================================
         async function submitWithdraw() {
             const addr = document.getElementById('ton-address').value.trim();
@@ -763,7 +761,6 @@
                 timestamp: Date.now()
             };
 
-            // POST to /withdrawals.json creates a unique key per user request (zero overwrite!)
             try {
                 await fetch(`${FIREBASE_DB_URL}/withdrawals.json`, {
                     method: 'POST',
@@ -772,11 +769,9 @@
                 });
             } catch (e) { console.error('Withdraw save error:', e); }
 
-            // Public Channel Post
             const publicMsg = `<b>CMMST PAYOUT</b>\n💸 <b>NEW PAYOUT REQUEST</b>\n\n👤 User: ${userName}\n⚡ Amount: ${amt.toLocaleString()} VOLT (${tonAmount} TON)\n💼 Wallet: <code>${masked}</code>\n⏳ Status: Processing...\n\n🤖 Earn now: @Ad_Airdrop_bot`;
             const sentPublic = await sendTelegramMessage(globalConfig.channelId, publicMsg);
 
-            // Private Admin DM with Full Copyable Address
             if (globalConfig.adminChatId) {
                 const adminMsg = `🔔 <b>ADMIN PAYOUT ALERT</b>\n\n👤 User: ${userName} (${userTag})\n💎 Send: <b>${tonAmount} TON</b> (${amt.toLocaleString()} VOLT)\n📋 <b>Full Wallet (Tap to copy):</b>\n<code>${addr}</code>`;
                 await sendTelegramMessage(globalConfig.adminChatId, adminMsg);
