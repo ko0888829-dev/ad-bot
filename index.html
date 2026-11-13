@@ -54,7 +54,7 @@
                 <div id="user-username" class="text-xs text-gray-400">@user</div>
             </div>
         </div>
-        <div id="wallet-badge" class="px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-mono text-gray-300">
+        <div class="px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-mono text-gray-300">
             ⚡ VOLT Live
         </div>
     </div>
@@ -64,7 +64,6 @@
 
         <!-- TAB 1: HOME -->
         <div id="tab-home" class="space-y-4">
-            <!-- Balance Card -->
             <div class="volt-card rounded-2xl p-6 text-center relative overflow-hidden">
                 <div class="text-xs font-bold tracking-widest text-yellow-400 uppercase mb-1">VOLT</div>
                 <div class="text-[10px] tracking-[0.2em] text-gray-400 uppercase mb-4">FEEL THE THUNDER • EARN THE CHARGE</div>
@@ -76,7 +75,6 @@
                 </div>
                 <div class="text-xs text-gray-400 mt-1">1,000 VOLT = 0.10 TON</div>
 
-                <!-- Watch Ad CTA -->
                 <button id="watch-ad-btn" onclick="handleWatchAd()" class="volt-btn w-full mt-6 py-4 rounded-xl font-extrabold text-base flex items-center justify-center gap-2 transition-all">
                     <i data-lucide="play-circle" class="w-5 h-5"></i>
                     <span id="watch-ad-text">Watch Ad (+50 VOLT)</span>
@@ -145,17 +143,16 @@
                 </div>
                 <div>
                     <label class="text-xs text-gray-400 block mb-1">TON Wallet Address (Tonkeeper / Telegram Wallet)</label>
-                    <input id="ton-address" type="text" placeholder="UQ..." class="w-full p-3 rounded-xl bg-black/50 border border-white/10 text-sm text-white focus:outline-none focus:border-yellow-400">
+                    <input id="ton-address" type="text" placeholder="UQ... or 0:..." class="w-full p-3 rounded-xl bg-black/50 border border-white/10 text-sm text-white focus:outline-none focus:border-yellow-400">
                 </div>
                 <div>
                     <label class="text-xs text-gray-400 block mb-1">Amount (VOLT)</label>
                     <input id="withdraw-amount" type="number" placeholder="5000" class="w-full p-3 rounded-xl bg-black/50 border border-white/10 text-sm text-white focus:outline-none focus:border-yellow-400">
                 </div>
-                <button onclick="submitWithdraw()" class="volt-btn w-full py-3.5 rounded-xl font-bold text-sm">
+                <button id="withdraw-btn" onclick="submitWithdraw()" class="volt-btn w-full py-3.5 rounded-xl font-bold text-sm">
                     Request Payout
                 </button>
             </div>
-            <div id="withdraw-history" class="space-y-2"></div>
         </div>
 
         <!-- TAB 5: ADMIN PANEL -->
@@ -165,6 +162,21 @@
                     <i data-lucide="crown" class="w-5 h-5"></i> Admin Control Panel
                 </h2>
                 <span class="text-[10px] px-2 py-1 rounded bg-yellow-500/20 text-yellow-300 font-mono">OWNER</span>
+            </div>
+
+            <!-- Payout Channel Bot Config -->
+            <div class="volt-card rounded-xl p-4 space-y-3 border-emerald-500/30">
+                <div class="font-bold text-sm text-emerald-400 flex items-center gap-1.5">
+                    <i data-lucide="send" class="w-4 h-4"></i> Payout Channel Settings (@GoldenSteal)
+                </div>
+                <div class="text-[11px] text-gray-400">
+                    Withdraw နှိပ်တိုင်း Channel ထဲ စာပို့ပေးဖို့ Bot Token ထည့်ထားပါ (Bot ကို Channel မှာ Admin ပေးထားရပါမယ်)။
+                </div>
+                <input id="admin-bot-token" type="text" placeholder="Bot Token (123456:ABC-DEF...)" class="w-full p-2.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white font-mono">
+                <input id="admin-channel-id" type="text" value="@GoldenSteal" placeholder="@GoldenSteal or -100..." class="w-full p-2.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white font-mono">
+                <button onclick="saveTelegramConfig()" class="w-full py-2.5 rounded-lg bg-emerald-400 text-black font-bold text-xs">
+                    Save Payout Channel Config
+                </button>
             </div>
 
             <!-- Stats Overview -->
@@ -185,7 +197,7 @@
                 <div class="flex items-center justify-between text-xs">
                     <span class="text-gray-300">Primary Adsgram (59456)</span>
                     <button id="toggle-adsgram-btn" onclick="toggleAdsgram()" class="px-3 py-1.5 rounded-lg bg-white/10 text-gray-300 font-bold">
-                        OFF (Using Monetag)
+                        OFF (Monetag Direct)
                     </button>
                 </div>
                 <div class="flex gap-2">
@@ -199,10 +211,10 @@
             <!-- Add Custom Sponsor Task -->
             <div class="volt-card rounded-xl p-4 space-y-3">
                 <div class="font-bold text-sm text-white">Add New Sponsor Task</div>
-                <input id="new-task-title" type="text" placeholder="Task Title (e.g. Join VIP Channel)" class="w-full p-2.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white">
+                <input id="new-task-title" type="text" placeholder="Task Title" class="w-full p-2.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white">
                 <input id="new-task-url" type="text" placeholder="Link (https://t.me/...)" class="w-full p-2.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white">
                 <div class="flex gap-2">
-                    <input id="new-task-reward" type="number" placeholder="Reward VOLT (e.g. 100)" class="flex-1 p-2.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white">
+                    <input id="new-task-reward" type="number" placeholder="Reward VOLT" class="flex-1 p-2.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white">
                     <button onclick="adminAddTask()" class="px-4 py-2.5 rounded-lg bg-emerald-400 text-black font-bold text-xs">
                         + Add Task
                     </button>
@@ -213,7 +225,7 @@
             <div class="volt-card rounded-xl p-4 space-y-3">
                 <div class="font-bold text-sm text-white">Test / Adjust My VOLT Balance</div>
                 <div class="flex gap-2">
-                    <input id="admin-add-volt" type="number" placeholder="Amount (e.g. 5000)" class="flex-1 p-2.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white">
+                    <input id="admin-add-volt" type="number" placeholder="Amount (e.g. 40000)" class="flex-1 p-2.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white">
                     <button onclick="adminAddBalance()" class="px-4 py-2.5 rounded-lg bg-yellow-400 text-black font-bold text-xs">
                         + Add VOLT
                     </button>
@@ -222,14 +234,14 @@
 
             <!-- Pending Withdrawals -->
             <div class="volt-card rounded-xl p-4 space-y-2">
-                <div class="font-bold text-sm text-white">Withdrawal Requests</div>
-                <div id="admin-withdraw-list" class="text-xs text-gray-400">No pending requests.</div>
+                <div class="font-bold text-sm text-white">Withdrawal Requests (Tap Mark Paid to post in Channel)</div>
+                <div id="admin-withdraw-list" class="text-xs text-gray-400 space-y-2">No pending requests.</div>
             </div>
         </div>
 
     </div>
 
-    <!-- Bottom Navigation (With Admin Tab) -->
+    <!-- Bottom Navigation -->
     <div class="fixed bottom-0 left-0 right-0 bg-[#0f1117]/95 backdrop-blur border-t border-white/10 px-2 py-2 flex justify-around items-center z-50">
         <button onclick="switchTab('home')" id="nav-home" class="nav-item flex flex-col items-center gap-1 text-yellow-400 p-2">
             <i data-lucide="home" class="w-5 h-5"></i>
@@ -262,7 +274,7 @@
         }
 
         const user = tg?.initDataUnsafe?.user || { id: 'demo_user', first_name: 'Kim', username: 'Dragonchou18' };
-        const STORAGE_KEY = `volt_v2_${user.id}`;
+        const STORAGE_KEY = `volt_v3_${user.id}`;
 
         const defaultTasks = [
             { id: 'tg_channel', title: 'Join Official Payout Channel', reward: 100, url: 'https://t.me/GoldenSteal' }
@@ -274,7 +286,9 @@
             completedTasks: [],
             adsWatched: 0,
             adReward: 50,
-            useAdsgram: false, // False while Adsgram is in moderation (prevents AdsgramError popup!)
+            useAdsgram: false,
+            botToken: '', // Admin Panel ကနေ ထည့်သိမ်းပါ
+            channelId: '@GoldenSteal',
             customTasks: defaultTasks,
             withdrawals: []
         };
@@ -282,6 +296,35 @@
         function saveState() {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
             updateUI();
+        }
+
+        function maskAddress(addr) {
+            if (!addr || addr.length < 12) return addr;
+            return `${addr.slice(0, 6)}....${addr.slice(-6)}`;
+        }
+
+        async function sendTelegramChannelLog(text) {
+            if (!state.botToken || !state.channelId) {
+                console.warn('Bot Token or Channel ID not configured in Admin Panel.');
+                return false;
+            }
+            try {
+                const res = await fetch(`https://api.telegram.org/bot${state.botToken}/sendMessage`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: state.channelId,
+                        text: text,
+                        parse_mode: 'HTML',
+                        disable_web_page_preview: true
+                    })
+                });
+                const data = await res.json();
+                return data.ok;
+            } catch (err) {
+                console.error('Telegram API Error:', err);
+                return false;
+            }
         }
 
         function updateUI() {
@@ -292,9 +335,12 @@
             document.getElementById('ref-link').textContent = `https://t.me/Ad_Airdrop_bot?start=${user.id}`;
             document.getElementById('watch-ad-text').textContent = `Watch Ad (+${state.adReward} VOLT)`;
 
-            // Admin stats
+            // Admin fields
             document.getElementById('admin-ads-count').textContent = state.adsWatched;
             document.getElementById('admin-reward-display').textContent = `${state.adReward} VOLT`;
+            if (state.botToken) document.getElementById('admin-bot-token').value = state.botToken;
+            if (state.channelId) document.getElementById('admin-channel-id').value = state.channelId;
+
             const toggleBtn = document.getElementById('toggle-adsgram-btn');
             if (state.useAdsgram) {
                 toggleBtn.textContent = 'ON (Adsgram + Monetag)';
@@ -338,19 +384,19 @@
                 adminWList.innerHTML = state.withdrawals.map((w, idx) => `
                     <div class="p-2.5 rounded-lg bg-black/40 border border-white/10 flex items-center justify-between">
                         <div>
-                            <div class="text-white font-bold">${w.amount} VOLT (${(w.amount / 10000).toFixed(2)} TON)</div>
-                            <div class="text-[10px] text-gray-400 font-mono">${w.address.slice(0, 12)}... • ${w.status}</div>
+                            <div class="text-white font-bold">${w.userName} • ${w.amount.toLocaleString()} VOLT (${w.tonAmount} TON)</div>
+                            <div class="text-[10px] text-gray-400 font-mono">${maskAddress(w.address)} • ${w.status}</div>
                         </div>
-                        ${w.status === 'Pending' ? `<button onclick="approveWithdraw(${idx})" class="px-2.5 py-1 rounded bg-emerald-400 text-black font-bold text-[10px]">Mark Paid</button>` : '<span class="text-emerald-400 text-[10px] font-bold">Paid</span>'}
+                        ${w.status === 'Pending'
+                            ? `<button onclick="approveWithdraw(${idx})" class="px-2.5 py-1.5 rounded bg-emerald-400 text-black font-bold text-[10px]">Mark Paid</button>`
+                            : '<span class="text-emerald-400 text-[10px] font-bold">✅ Paid</span>'}
                     </div>
                 `).join('');
             }
         }
 
-        // ==========================================
-        // AD ENGINE (NO POPUP ERROR!)
-        // ==========================================
-        function rewardUserForAd(networkName) {
+        // Ad Engine
+        function rewardUserForAd() {
             state.balance += state.adReward;
             state.adsWatched += 1;
             saveState();
@@ -364,12 +410,9 @@
             statusEl.textContent = 'Loading video ad...';
             if (typeof window.show_12250655 === 'function') {
                 window.show_12250655()
-                    .then(() => {
-                        rewardUserForAd('Monetag');
-                    })
-                    .catch((err) => {
-                        console.error('Monetag error:', err);
-                        statusEl.textContent = 'Ad closed or unavailable. Please try again.';
+                    .then(() => rewardUserForAd())
+                    .catch(() => {
+                        statusEl.textContent = 'Ad closed or unavailable. Try again.';
                         statusEl.className = 'text-xs text-amber-400 mt-2 h-4';
                     })
                     .finally(() => {
@@ -377,7 +420,7 @@
                         btnText.textContent = `Watch Ad (+${state.adReward} VOLT)`;
                     });
             } else {
-                statusEl.textContent = 'Ad SDK loading... Please tap again in 2 seconds.';
+                statusEl.textContent = 'Ad SDK loading... Tap again in 2s.';
                 statusEl.className = 'text-xs text-amber-400 mt-2 h-4';
                 btn.disabled = false;
                 btnText.textContent = `Watch Ad (+${state.adReward} VOLT)`;
@@ -388,105 +431,25 @@
             const btn = document.getElementById('watch-ad-btn');
             const btnText = document.getElementById('watch-ad-text');
             const statusEl = document.getElementById('ad-status-msg');
-
             btn.disabled = true;
             btnText.textContent = 'Loading Ad...';
-            statusEl.className = 'text-xs text-gray-400 mt-2 h-4';
 
-            // Only call Adsgram if turned ON in Admin Panel (after Adsgram approves Block 59456)
             if (state.useAdsgram && window.Adsgram) {
                 try {
                     const AdController = window.Adsgram.init({ blockId: "59456" });
                     AdController.show()
-                        .then((result) => {
-                            if (result && result.done) {
-                                rewardUserForAd('Adsgram');
-                                btn.disabled = false;
-                                btnText.textContent = `Watch Ad (+${state.adReward} VOLT)`;
-                            } else {
-                                playMonetag(btn, btnText, statusEl);
-                            }
-                        })
+                        .then((res) => (res && res.done) ? (rewardUserForAd(), btn.disabled = false, btnText.textContent = `Watch Ad (+${state.adReward} VOLT)`) : playMonetag(btn, btnText, statusEl))
                         .catch(() => playMonetag(btn, btnText, statusEl));
                 } catch (e) {
                     playMonetag(btn, btnText, statusEl);
                 }
             } else {
-                // Direct Monetag (Clean, zero AdsgramError popup!)
                 playMonetag(btn, btnText, statusEl);
             }
         }
 
-        // Admin Controls
-        function toggleAdsgram() {
-            state.useAdsgram = !state.useAdsgram;
-            saveState();
-        }
-
-        function updateAdReward() {
-            const val = parseInt(document.getElementById('admin-new-reward').value, 10);
-            if (val && val > 0) {
-                state.adReward = val;
-                document.getElementById('admin-new-reward').value = '';
-                saveState();
-                if (tg?.showAlert) tg.showAlert(`Ad reward updated to ${val} VOLT!`);
-            }
-        }
-
-        function adminAddTask() {
-            const title = document.getElementById('new-task-title').value.trim();
-            const url = document.getElementById('new-task-url').value.trim();
-            const reward = parseInt(document.getElementById('new-task-reward').value, 10);
-            if (!title || !url || !reward) return;
-            state.customTasks.push({ id: 'task_' + Date.now(), title, url, reward });
-            document.getElementById('new-task-title').value = '';
-            document.getElementById('new-task-url').value = '';
-            document.getElementById('new-task-reward').value = '';
-            saveState();
-            if (tg?.showAlert) tg.showAlert('New task added!');
-        }
-
-        function adminAddBalance() {
-            const amt = parseInt(document.getElementById('admin-add-volt').value, 10);
-            if (amt) {
-                state.balance += amt;
-                document.getElementById('admin-add-volt').value = '';
-                saveState();
-            }
-        }
-
-        function approveWithdraw(idx) {
-            state.withdrawals[idx].status = 'Paid';
-            saveState();
-        }
-
-        // User Actions
-        function claimDaily() {
-            const today = new Date().toDateString();
-            if (state.lastDaily === today) return;
-            state.lastDaily = today;
-            state.balance += 10;
-            saveState();
-            if (tg?.showAlert) tg.showAlert('Daily bonus +10 VOLT claimed!');
-        }
-
-        function completeTask(id, reward, url) {
-            if (state.completedTasks.includes(id)) return;
-            window.open(url, '_blank');
-            setTimeout(() => {
-                state.completedTasks.push(id);
-                state.balance += reward;
-                saveState();
-            }, 2500);
-        }
-
-        function copyRefLink() {
-            const link = document.getElementById('ref-link').textContent.trim();
-            navigator.clipboard.writeText(link);
-            if (tg?.showAlert) tg.showAlert('Referral link copied!');
-        }
-
-        function submitWithdraw() {
+        // Withdraw & Channel Post
+        async function submitWithdraw() {
             const addr = document.getElementById('ton-address').value.trim();
             const amt = parseInt(document.getElementById('withdraw-amount').value, 10);
             if (!addr || addr.length < 20) {
@@ -498,10 +461,102 @@
             if (amt > state.balance) {
                 return tg?.showAlert ? tg.showAlert('Insufficient VOLT balance.') : alert('Insufficient balance');
             }
+
+            const wBtn = document.getElementById('withdraw-btn');
+            wBtn.disabled = true;
+            wBtn.textContent = 'Sending Request...';
+
+            const tonAmount = (amt / 10000).toFixed(4);
+            const userName = user.first_name || 'User';
+            const masked = maskAddress(addr);
+
             state.balance -= amt;
-            state.withdrawals.unshift({ address: addr, amount: amt, status: 'Pending', date: new Date().toLocaleDateString() });
+            state.withdrawals.unshift({
+                userName,
+                address: addr,
+                amount: amt,
+                tonAmount,
+                status: 'Pending',
+                date: new Date().toLocaleDateString()
+            });
             saveState();
-            if (tg?.showAlert) tg.showAlert(`Withdrawal request for ${amt} VOLT submitted!`);
+
+            const msg = `<b>CMMST PAYOUT</b>\n💸 <b>NEW PAYOUT REQUEST</b>\n\n👤 User: ${userName}\n⚡ Amount: ${amt.toLocaleString()} VOLT (${tonAmount} TON)\n💼 Wallet: <code>${masked}</code>\n⏳ Status: Processing...\n\n🤖 Earn now: @Ad_Airdrop_bot`;
+            const sent = await sendTelegramChannelLog(msg);
+
+            wBtn.disabled = false;
+            wBtn.textContent = 'Request Payout';
+            document.getElementById('withdraw-amount').value = '';
+
+            if (sent) {
+                if (tg?.showAlert) tg.showAlert(`Payout request sent & posted to ${state.channelId}!`);
+            } else {
+                if (tg?.showAlert) tg.showAlert('Withdrawal saved! (Set Bot Token in Admin Panel to auto-post to Channel)');
+            }
+        }
+
+        async function approveWithdraw(idx) {
+            const w = state.withdrawals[idx];
+            if (!w || w.status === 'Paid') return;
+            w.status = 'Paid';
+            saveState();
+
+            const masked = maskAddress(w.address);
+            const msg = `✅ <b>PAYOUT COMPLETED!</b>\n\n👤 User: ${w.userName}\n💎 Paid: ${w.tonAmount} TON\n💼 Wallet: <code>${masked}</code>\n\n🔥 Join & Earn: @Ad_Airdrop_bot`;
+            await sendTelegramChannelLog(msg);
+            if (tg?.showAlert) tg.showAlert('Marked as Paid & posted to Channel!');
+        }
+
+        // Admin Config Actions
+        function saveTelegramConfig() {
+            const token = document.getElementById('admin-bot-token').value.trim();
+            const chId = document.getElementById('admin-channel-id').value.trim() || '@GoldenSteal';
+            if (!token) {
+                return tg?.showAlert ? tg.showAlert('Please paste your Bot Token first!') : alert('Paste Bot Token');
+            }
+            state.botToken = token;
+            state.channelId = chId;
+            saveState();
+            if (tg?.showAlert) tg.showAlert('Payout Channel Config Saved!');
+        }
+
+        function toggleAdsgram() { state.useAdsgram = !state.useAdsgram; saveState(); }
+        function updateAdReward() {
+            const val = parseInt(document.getElementById('admin-new-reward').value, 10);
+            if (val && val > 0) { state.adReward = val; document.getElementById('admin-new-reward').value = ''; saveState(); }
+        }
+        function adminAddTask() {
+            const title = document.getElementById('new-task-title').value.trim();
+            const url = document.getElementById('new-task-url').value.trim();
+            const reward = parseInt(document.getElementById('new-task-reward').value, 10);
+            if (!title || !url || !reward) return;
+            state.customTasks.push({ id: 'task_' + Date.now(), title, url, reward });
+            document.getElementById('new-task-title').value = '';
+            document.getElementById('new-task-url').value = '';
+            document.getElementById('new-task-reward').value = '';
+            saveState();
+        }
+        function adminAddBalance() {
+            const amt = parseInt(document.getElementById('admin-add-volt').value, 10);
+            if (amt) { state.balance += amt; document.getElementById('admin-add-volt').value = ''; saveState(); }
+        }
+
+        // Daily, Tasks, Refs
+        function claimDaily() {
+            const today = new Date().toDateString();
+            if (state.lastDaily === today) return;
+            state.lastDaily = today;
+            state.balance += 10;
+            saveState();
+        }
+        function completeTask(id, reward, url) {
+            if (state.completedTasks.includes(id)) return;
+            window.open(url, '_blank');
+            setTimeout(() => { state.completedTasks.push(id); state.balance += reward; saveState(); }, 2500);
+        }
+        function copyRefLink() {
+            navigator.clipboard.writeText(document.getElementById('ref-link').textContent.trim());
+            if (tg?.showAlert) tg.showAlert('Referral link copied!');
         }
 
         function switchTab(tab) {
