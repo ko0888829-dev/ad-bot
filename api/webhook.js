@@ -4,7 +4,7 @@ export default async function handler(req, res) {
   }
 
   const BOT_TOKEN = "9268751430:AAHNysSjix_l_j4VxRZq2VUZSpS9FDpA2bQ";
-  const WEBAPP_URL = "https://your-volt-app.vercel.app"; // 🚀 Open app မှာ ထည့်ထားတဲ့ သင့် Vercel Link အစစ်ကို ထည့်ပါ
+  const WEBAPP_URL = "https://ad-bot-jet.vercel.app";
 
   const update = req.body;
   if (update && update.message && update.message.text) {
