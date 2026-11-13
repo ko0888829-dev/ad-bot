@@ -260,7 +260,7 @@
                 <button onclick="syncAllFromCloud()" class="text-xs text-yellow-400 underline">Refresh</button>
             </div>
             <div class="text-[11px] text-gray-400 bg-white/5 p-2.5 rounded-lg">
-                💡 Join the channel first, then tap <b>Verify</b> to claim your VOLT reward.
+                💡 Join the channel first, then tap <b>Verify</b> & watch full ad to claim your VOLT reward.
             </div>
             <div id="tasks-list" class="space-y-3"></div>
         </div>
@@ -1128,7 +1128,7 @@
         }
 
         // ==========================================
-        // 7. REAL CHANNEL JOIN VERIFICATION + USER LIMIT CHECK
+        // 7. REAL CHANNEL JOIN VERIFICATION + USER LIMIT CHECK + STRICT AD
         // ==========================================
         function extractChannelUsername(url) {
             if (!url) return null;
@@ -1207,28 +1207,43 @@
                 }
             }
 
-            await loadTaskStatsFromCloud();
-            const freshCount = Number(taskStats[id] || 0);
-            if (maxUsers > 0 && freshCount >= maxUsers) {
-                updateUI();
-                return tg?.showAlert ? tg.showAlert('Sorry! This task just filled up.') : alert('Task limit full!');
+            if (btn) {
+                btn.textContent = 'Ad...';
             }
 
-            const updatedCount = freshCount + 1;
-            taskStats[id] = updatedCount;
-            try {
-                await fetch(`${FIREBASE_DB_URL}/task_stats.json`, {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ [id]: updatedCount })
-                });
-            } catch (e) { console.error(e); }
+            runStrictVerifiedAd(
+                async () => {
+                    await loadTaskStatsFromCloud();
+                    const freshCount = Number(taskStats[id] || 0);
+                    if (maxUsers > 0 && freshCount >= maxUsers) {
+                        updateUI();
+                        return tg?.showAlert ? tg.showAlert('Sorry! This task just filled up.') : alert('Task limit full!');
+                    }
 
-            userState.completedTasks.push(id);
-            userState.balance += reward;
-            await saveUserToCloud();
-            if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-            if (tg?.showAlert) tg.showAlert(`Verified! +${reward} VOLT added!`);
+                    const updatedCount = freshCount + 1;
+                    taskStats[id] = updatedCount;
+                    try {
+                        await fetch(`${FIREBASE_DB_URL}/task_stats.json`, {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ [id]: updatedCount })
+                        });
+                    } catch (e) { console.error(e); }
+
+                    userState.completedTasks.push(id);
+                    userState.balance += reward;
+                    await saveUserToCloud();
+                    if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                    if (tg?.showAlert) tg.showAlert(`Verified & Ad Completed! +${reward} VOLT added!`);
+                },
+                (errMsg) => {
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.textContent = 'Verify';
+                    }
+                    if (tg?.showAlert && errMsg) tg.showAlert(errMsg);
+                }
+            );
         }
 
         // ==========================================
