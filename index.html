@@ -155,7 +155,7 @@
                     </div>
                 </div>
                 <div class="p-3 rounded-lg bg-black/40 border border-white/10 text-xs font-mono text-gray-300 break-all" id="ref-link">
-                    https://t.me/Ad_Airdrop_bot?start=ref
+                    https://t.me/Ad_Airdrop_bot/app?startapp=ref
                 </div>
                 <button onclick="copyRefLink()" class="volt-btn w-full py-3 rounded-xl font-bold text-sm">
                     Copy Referral Link
@@ -319,7 +319,7 @@
         const OWNER_IDS = [];
         const REF_REWARD = 50;
         const DAILY_REWARD = 10;
-        const MIN_AD_SECONDS = 12; // Must watch at least 12 seconds to unlock any reward
+        const MIN_AD_SECONDS = 12;
 
         const user = tg?.initDataUnsafe?.user || { id: 'demo_user', first_name: 'Kim', username: 'Dragonchou18' };
         const isOwner = OWNER_USERNAMES.includes((user.username || '').toLowerCase()) || OWNER_IDS.includes(Number(user.id));
@@ -354,8 +354,8 @@
             tasks: DEFAULT_TASKS
         };
 
-        let globalPromos = {}; // Stored in /promocodes.json
-        let allWithdrawals = []; // Stored in /withdrawals.json
+        let globalPromos = {};
+        let allWithdrawals = [];
         let openedTasks = {};
         let isAdPlaying = false;
 
@@ -527,7 +527,7 @@
         }
 
         // ==========================================
-        // 4. HOME AD, DAILY CHECK-IN & PROMO CODE (ALL REQUIRE FULL AD)
+        // 4. HOME AD, DAILY CHECK-IN & PROMO CODE
         // ==========================================
         function handleWatchAd() {
             const btn = document.getElementById('watch-ad-btn');
@@ -621,13 +621,11 @@
                 return showPromoStatus('This promo code has reached its max limit.');
             }
 
-            // Valid code -> Now force user to watch the full ad before granting reward!
             btn.textContent = 'Watch Ad...';
             showPromoStatus(`Valid code (+${promo.reward} VOLT)! Watch full ad (${MIN_AD_SECONDS}s+) to claim...`, false);
 
             runStrictVerifiedAd(
                 async () => {
-                    // Re-check cloud limit after ad finishes
                     await loadPromosFromCloud();
                     const freshPromo = globalPromos[code];
                     const freshUsed = Number((freshPromo && freshPromo.usedCount) || 0);
@@ -642,7 +640,6 @@
                     userState.balance += rewardAmt;
                     await saveUserToCloud();
 
-                    // Increment global usage counter in Firebase
                     try {
                         await fetch(`${FIREBASE_DB_URL}/promocodes/${code}.json`, {
                             method: 'PATCH',
@@ -667,7 +664,7 @@
         }
 
         // ==========================================
-        // 5. REFERRAL SYSTEM (+50 VOLT)
+        // 5. REFERRAL SYSTEM (+50 VOLT VIA DIRECT MINI APP LINK)
         // ==========================================
         async function processReferralOnStart() {
             const urlParams = new URLSearchParams(window.location.search);
@@ -816,7 +813,7 @@
             document.getElementById('user-username').textContent = user.username ? `@${user.username}` : `ID: ${user.id}`;
             document.getElementById('user-avatar').textContent = (user.first_name || 'V')[0].toUpperCase();
             document.getElementById('volt-balance').textContent = userState.balance.toLocaleString();
-            document.getElementById('ref-link').textContent = `https://t.me/Ad_Airdrop_bot?start=${user.id}`;
+            document.getElementById('ref-link').textContent = `https://t.me/Ad_Airdrop_bot/app?startapp=${user.id}`;
             document.getElementById('ref-count').textContent = userState.refCount || 0;
             document.getElementById('ref-earned').textContent = `${(userState.refEarned || 0).toLocaleString()} VOLT`;
             document.getElementById('watch-ad-text').textContent = `Watch Ad (+${globalConfig.adReward} VOLT)`;
@@ -871,7 +868,6 @@
                     toggleBtn.className = 'px-3 py-1.5 rounded-lg bg-yellow-500/20 text-yellow-300 font-bold';
                 }
 
-                // Render Active Promo Codes in Admin Panel
                 const adminPromosDiv = document.getElementById('admin-promos-list');
                 const promoEntries = Object.entries(globalPromos || {});
                 if (promoEntries.length > 0) {
@@ -1013,7 +1009,7 @@
         }
 
         // ==========================================
-        // 9. OWNER ADMIN ACTIONS (PROMO CODES, TASKS, CONFIG)
+        // 9. OWNER ADMIN ACTIONS
         // ==========================================
         async function adminAddPromoCode() {
             const code = document.getElementById('new-promo-code').value.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '');
