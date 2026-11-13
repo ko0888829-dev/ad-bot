@@ -227,7 +227,7 @@
                         <i data-lucide="ticket" class="w-4 h-4 text-yellow-400"></i>
                         <span class="font-bold text-sm">Redeem Promo Code</span>
                     </div>
-                    <span class="text-[10px] text-gray-400">Watch Ad to Unlock</span>
+                    <a href="https://t.me/DargonGolden" target="_blank" class="text-[10px] text-yellow-400 underline">Get Codes: @DargonGolden</a>
                 </div>
                 <div class="flex gap-2">
                     <input id="promo-code-input" type="text" placeholder="Enter Promo Code..." class="flex-1 px-3 py-2.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white uppercase font-mono focus:outline-none focus:border-yellow-400">
@@ -320,16 +320,19 @@
                 <span class="text-[10px] px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 font-mono">OWNER ONLY</span>
             </div>
 
-            <!-- Create & Manage Promo Codes -->
+            <!-- Create & Auto-Post Promo Codes to @DargonGolden -->
             <div class="volt-card rounded-xl p-4 space-y-3 border-yellow-500/30">
-                <div class="font-bold text-sm text-yellow-400 flex items-center gap-1.5">
-                    <i data-lucide="ticket" class="w-4 h-4"></i> Create Promo Code
+                <div class="flex items-center justify-between">
+                    <div class="font-bold text-sm text-yellow-400 flex items-center gap-1.5">
+                        <i data-lucide="ticket" class="w-4 h-4"></i> Create Promo Code
+                    </div>
+                    <span class="text-[10px] text-emerald-400 font-mono">Auto-Post: @DargonGolden</span>
                 </div>
                 <div class="grid grid-cols-3 gap-2">
                     <input id="new-promo-code" type="text" placeholder="CODE (e.g. VIP500)" class="col-span-3 p-2.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white uppercase font-mono">
                     <input id="new-promo-reward" type="number" placeholder="VOLT (e.g. 200)" class="col-span-1 p-2.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white">
                     <input id="new-promo-limit" type="number" placeholder="Max Users (e.g. 50)" class="col-span-1 p-2.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white">
-                    <button onclick="adminAddPromoCode()" class="col-span-1 py-2.5 rounded-lg bg-yellow-400 text-black font-bold text-xs">
+                    <button id="create-promo-btn" onclick="adminAddPromoCode()" class="col-span-1 py-2.5 rounded-lg bg-yellow-400 text-black font-bold text-xs">
                         + Create
                     </button>
                 </div>
@@ -443,6 +446,7 @@
         // 1. CONFIG & OWNER SECURITY
         // ==========================================
         const FIREBASE_DB_URL = "https://adpro-bot-default-rtdb.firebaseio.com";
+        const PROMO_CHANNEL = "@DargonGolden";
         const OWNER_USERNAMES = ['dragonchou18'];
         const OWNER_IDS = [];
         const REF_REWARD = 50;
@@ -498,7 +502,6 @@
         let currentWheelRotation = 0;
         let isSpinning = false;
 
-        // Mystery Box 9-slot board state (Always 2 Empties + 7 Random Prizes)
         let boxCanPick = true;
         let boxBoard = [];
         let revealedBoxes = {};
@@ -698,8 +701,7 @@
             if (gameName === 'box') renderMysteryGrid();
         }
 
-        // --- GAME 1: LUCKY WHEEL (USER EXACT WEIGHTED ODDS) ---
-        // 25 VOLT: 35 | 50 VOLT: 45 | +1 SPIN: 35 | 100 VOLT: 25 | 250 VOLT: 5 | 1000 VOLT: 1
+        // --- GAME 1: LUCKY WHEEL ---
         const WHEEL_SEGMENTS = [
             { label: '25 VOLT', reward: 25, extraSpin: false, weight: 35, centerDeg: 30 },
             { label: '50 VOLT', reward: 50, extraSpin: false, weight: 45, centerDeg: 90 },
@@ -761,21 +763,18 @@
             if (isSpinning) return;
             const today = new Date().toDateString();
 
-            // 1. Check if user won a +1 Free Spin (No Ad required!)
             if ((userState.bonusSpins || 0) > 0) {
                 userState.bonusSpins -= 1;
                 localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userState));
                 return executeWheelSpin();
             }
 
-            // 2. Check Daily Free Spin
             if (userState.lastFreeSpin !== today) {
                 userState.lastFreeSpin = today;
                 localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userState));
                 return executeWheelSpin();
             }
 
-            // 3. Otherwise require watching full ad
             const spinBtn = document.getElementById('spin-btn');
             const statusEl = document.getElementById('wheel-status');
             spinBtn.disabled = true;
@@ -794,8 +793,7 @@
             );
         }
 
-        // --- GAME 2: MYSTERY BOX (9 BOXES: EXACTLY 2 EMPTIES + 7 RANDOM PRIZES) ---
-        // 25 VOLT [25%], 50 VOLT [35%], 80 VOLT [15%], 120 VOLT [10%], 250 VOLT [5%], 500 VOLT [1%]
+        // --- GAME 2: MYSTERY BOX (9 BOXES: 2 EMPTIES + 7 RANDOM PRIZES) ---
         const BOX_PRIZE_POOL = [
             { reward: 25, weight: 25 },
             { reward: 50, weight: 35 },
@@ -806,13 +804,11 @@
         ];
 
         function generateFreshBoxBoard() {
-            // Create 9 slots: 2 Empty (0) + 7 Random Weighted Prizes
             const slots = [0, 0];
             for (let i = 0; i < 7; i++) {
                 const picked = pickWeightedOutcome(BOX_PRIZE_POOL);
                 slots.push(picked.reward);
             }
-            // Fisher-Yates Shuffle
             for (let i = slots.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [slots[i], slots[j]] = [slots[j], slots[i]];
@@ -1280,7 +1276,7 @@
 
             const today = new Date().toDateString();
 
-            // Wheel Button State (Bonus Spins -> Daily Free Spin -> Watch Ad)
+            // Wheel Button State
             const spinBtn = document.getElementById('spin-btn');
             if (!isSpinning) {
                 spinBtn.disabled = false;
@@ -1371,12 +1367,15 @@
                 if (promoEntries.length > 0) {
                     adminPromosDiv.innerHTML = promoEntries.map(([code, p]) => `
                         <div class="flex items-center justify-between text-xs bg-black/40 p-2 rounded border border-white/5">
-                            <div>
+                            <div class="truncate">
                                 <span onclick="copyText('${code}', 'Code ${code} copied!')" class="font-mono font-bold text-yellow-400 cursor-pointer">${code}</span>
-                                <span class="text-gray-300 ml-1.5">+${p.reward} VOLT</span>
+                                <span class="text-gray-300 ml-1">+${p.reward}</span>
                                 <span class="text-[10px] text-gray-500 ml-1">(${p.usedCount || 0}/${p.maxUses || '∞'})</span>
                             </div>
-                            <button onclick="adminDeletePromo('${code}')" class="text-red-400 font-bold px-2">Delete</button>
+                            <div class="flex items-center gap-2 shrink-0">
+                                <button onclick="postPromoToChannel('${code}', ${p.reward}, ${p.maxUses || 100})" class="text-emerald-400 font-bold px-1.5">Post</button>
+                                <button onclick="adminDeletePromo('${code}')" class="text-red-400 font-bold px-1.5">Delete</button>
+                            </div>
                         </div>
                     `).join('');
                 } else {
@@ -1511,8 +1510,27 @@
         }
 
         // ==========================================
-        // 10. OWNER ADMIN ACTIONS
+        // 10. OWNER ADMIN ACTIONS (AUTO-POST PROMO TO @DargonGolden)
         // ==========================================
+        async function postPromoToChannel(code, reward, maxUses) {
+            await loadConfigFromCloud();
+            const promoPost = `🎟 <b>NEW PROMO CODE DROP!</b> ⚡\n\n` +
+                `💰 <b>Reward:</b> +${Number(reward).toLocaleString()} VOLT\n` +
+                `👥 <b>Limit:</b> First ${Number(maxUses).toLocaleString()} Users Only!\n\n` +
+                `📋 <b>Tap Code to Copy:</b>\n` +
+                `<code>${code}</code>\n\n` +
+                `🚀 <b>Redeem Now:</b> https://t.me/Ad_Airdrop_bot/app`;
+
+            const ok = await sendTelegramMessage(PROMO_CHANNEL, promoPost);
+            if (tg?.showAlert) {
+                tg.showAlert(ok
+                    ? `Posted ${code} to ${PROMO_CHANNEL}!`
+                    : `Could not post to ${PROMO_CHANNEL}. Make sure Bot is Admin in ${PROMO_CHANNEL}!`
+                );
+            }
+            return ok;
+        }
+
         async function adminAddPromoCode() {
             const code = document.getElementById('new-promo-code').value.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '');
             const reward = parseInt(document.getElementById('new-promo-reward').value, 10);
@@ -1521,6 +1539,10 @@
             if (!code || !reward || reward <= 0) {
                 return tg?.showAlert ? tg.showAlert('Enter valid code and VOLT reward!') : alert('Invalid promo inputs');
             }
+
+            const btn = document.getElementById('create-promo-btn');
+            btn.disabled = true;
+            btn.textContent = 'Posting...';
 
             try {
                 await fetch(`${FIREBASE_DB_URL}/promocodes/${code}.json`, {
@@ -1537,8 +1559,11 @@
                 document.getElementById('new-promo-reward').value = '';
                 document.getElementById('new-promo-limit').value = '';
                 await loadPromosFromCloud();
-                if (tg?.showAlert) tg.showAlert(`Promo code ${code} (+${reward} VOLT) created!`);
+                await postPromoToChannel(code, reward, maxUses);
             } catch (e) { console.error(e); }
+
+            btn.disabled = false;
+            btn.textContent = '+ Create';
         }
 
         async function adminDeletePromo(code) {
