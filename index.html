@@ -1470,7 +1470,7 @@
                 });
             } catch (e) { console.error('Withdraw save error:', e); }
 
-            const publicMsg = `<b>CMMST PAYOUT</b>\n💸 <b>NEW PAYOUT REQUEST</b>\n\n👤 User: ${userName}\n⚡ Amount: ${amt.toLocaleString()} VOLT (${tonAmount} TON)\n💼 Wallet: <code>${masked}</code>\n⏳ Status: Processing...\n\n🤖 Earn now: @Ad_Airdrop_bot`;
+            const publicMsg = `<b>VOLT PAYOUT</b>\n💸 <b>NEW PAYOUT REQUEST</b>\n\n👤 User: ${userName}\n⚡ Amount: ${amt.toLocaleString()} VOLT (${tonAmount} TON)\n💼 Wallet: <code>${masked}</code>\n⏳ Status: Processing...\n\n🤖 Earn now: @Ad_Airdrop_bot`;
             const sentPublic = await sendTelegramMessage(globalConfig.channelId, publicMsg);
 
             if (globalConfig.adminChatId) {
