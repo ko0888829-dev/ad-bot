@@ -77,7 +77,7 @@
                 <div id="ad-status-msg" class="text-xs text-gray-400 mt-2 h-4"></div>
             </div>
 
-            <!-- Daily Check-in -->
+            <!-- Daily Check-in (Requires Watching Full Ad) -->
             <div class="volt-card rounded-xl p-4 flex items-center justify-between">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 rounded-lg bg-yellow-500/10 flex items-center justify-center text-yellow-400">
@@ -85,12 +85,30 @@
                     </div>
                     <div>
                         <div class="font-bold text-sm">Daily Check-in</div>
-                        <div class="text-xs text-gray-400">Come back every day • +10 VOLT</div>
+                        <div class="text-xs text-gray-400">Watch ad to claim • +10 VOLT</div>
                     </div>
                 </div>
                 <button id="daily-btn" onclick="claimDaily()" class="px-4 py-2 rounded-lg bg-yellow-400 text-black font-bold text-xs">
                     Claim
                 </button>
+            </div>
+
+            <!-- Promo Code Redeem Card (Requires Watching Full Ad) -->
+            <div class="volt-card rounded-xl p-4 space-y-2.5">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="ticket" class="w-4 h-4 text-yellow-400"></i>
+                        <span class="font-bold text-sm">Redeem Promo Code</span>
+                    </div>
+                    <span class="text-[10px] text-gray-400">Watch Ad to Unlock</span>
+                </div>
+                <div class="flex gap-2">
+                    <input id="promo-code-input" type="text" placeholder="Enter Promo Code..." class="flex-1 px-3 py-2.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white uppercase font-mono focus:outline-none focus:border-yellow-400">
+                    <button id="promo-btn" onclick="redeemPromoCode()" class="px-4 py-2.5 rounded-lg bg-yellow-400 text-black font-bold text-xs shrink-0">
+                        Redeem
+                    </button>
+                </div>
+                <div id="promo-status-msg" class="text-[11px] text-gray-400 hidden"></div>
             </div>
 
             <!-- Official Channel -->
@@ -173,6 +191,22 @@
                     <i data-lucide="crown" class="w-5 h-5"></i> Admin Control Panel
                 </h2>
                 <span class="text-[10px] px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 font-mono">OWNER ONLY</span>
+            </div>
+
+            <!-- Create & Manage Promo Codes -->
+            <div class="volt-card rounded-xl p-4 space-y-3 border-yellow-500/30">
+                <div class="font-bold text-sm text-yellow-400 flex items-center gap-1.5">
+                    <i data-lucide="ticket" class="w-4 h-4"></i> Create Promo Code
+                </div>
+                <div class="grid grid-cols-3 gap-2">
+                    <input id="new-promo-code" type="text" placeholder="CODE (e.g. VIP500)" class="col-span-3 p-2.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white uppercase font-mono">
+                    <input id="new-promo-reward" type="number" placeholder="VOLT (e.g. 200)" class="col-span-1 p-2.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white">
+                    <input id="new-promo-limit" type="number" placeholder="Max Users (e.g. 50)" class="col-span-1 p-2.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white">
+                    <button onclick="adminAddPromoCode()" class="col-span-1 py-2.5 rounded-lg bg-yellow-400 text-black font-bold text-xs">
+                        + Create
+                    </button>
+                </div>
+                <div id="admin-promos-list" class="space-y-1.5 pt-2 border-t border-white/10"></div>
             </div>
 
             <!-- Payout Channel & Admin DM Config -->
@@ -284,7 +318,8 @@
         const OWNER_USERNAMES = ['dragonchou18'];
         const OWNER_IDS = [];
         const REF_REWARD = 50;
-        const MIN_AD_SECONDS = 12;
+        const DAILY_REWARD = 10;
+        const MIN_AD_SECONDS = 12; // Must watch at least 12 seconds to unlock any reward
 
         const user = tg?.initDataUnsafe?.user || { id: 'demo_user', first_name: 'Kim', username: 'Dragonchou18' };
         const isOwner = OWNER_USERNAMES.includes((user.username || '').toLowerCase()) || OWNER_IDS.includes(Number(user.id));
@@ -302,11 +337,13 @@
             balance: 0,
             lastDaily: null,
             completedTasks: [],
+            usedPromos: [],
             adsWatched: 0,
             refCount: 0,
             refEarned: 0,
             referredBy: null
         };
+        if (!Array.isArray(userState.usedPromos)) userState.usedPromos = [];
 
         let globalConfig = JSON.parse(localStorage.getItem('volt_cfg_cache')) || {
             adReward: 50,
@@ -317,8 +354,10 @@
             tasks: DEFAULT_TASKS
         };
 
-        let allWithdrawals = [];
+        let globalPromos = {}; // Stored in /promocodes.json
+        let allWithdrawals = []; // Stored in /withdrawals.json
         let openedTasks = {};
+        let isAdPlaying = false;
 
         // ==========================================
         // 2. CLOUD SYNC
@@ -337,7 +376,8 @@
                         balance: userState.balance,
                         refCount: userState.refCount || 0,
                         refEarned: userState.refEarned || 0,
-                        referredBy: userState.referredBy || null
+                        referredBy: userState.referredBy || null,
+                        usedPromos: userState.usedPromos || []
                     })
                 });
             } catch (e) { console.error(e); }
@@ -355,6 +395,9 @@
                     if (typeof data.refCount === 'number') userState.refCount = data.refCount;
                     if (typeof data.refEarned === 'number') userState.refEarned = data.refEarned;
                     if (data.referredBy) userState.referredBy = data.referredBy;
+                    if (Array.isArray(data.usedPromos)) {
+                        userState.usedPromos = Array.from(new Set([...userState.usedPromos, ...data.usedPromos]));
+                    }
                     localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userState));
                 }
             } catch (e) { console.error(e); }
@@ -392,6 +435,15 @@
             } catch (e) { console.error(e); }
         }
 
+        async function loadPromosFromCloud() {
+            try {
+                const res = await fetch(`${FIREBASE_DB_URL}/promocodes.json`);
+                const data = await res.json();
+                globalPromos = (data && typeof data === 'object') ? data : {};
+                updateUI();
+            } catch (e) { console.error(e); }
+        }
+
         async function loadWithdrawalsFromCloud() {
             try {
                 const res = await fetch(`${FIREBASE_DB_URL}/withdrawals.json`);
@@ -410,12 +462,212 @@
         async function syncAllFromCloud() {
             await loadConfigFromCloud();
             await loadUserFromCloud();
+            await loadPromosFromCloud();
             if (isOwner) await loadWithdrawalsFromCloud();
             updateUI();
         }
 
         // ==========================================
-        // 3. REFERRAL SYSTEM (+50 VOLT)
+        // 3. UNIVERSAL STRICT AD RUNNER (NO SKIP ALLOWED!)
+        // ==========================================
+        function runStrictVerifiedAd(onComplete, onFail) {
+            if (isAdPlaying) return;
+            isAdPlaying = true;
+
+            const finish = (success, msg) => {
+                isAdPlaying = false;
+                if (success) {
+                    onComplete();
+                } else {
+                    if (onFail) onFail(msg);
+                }
+            };
+
+            const playMonetagInternal = () => {
+                if (typeof window.show_12250655 !== 'function') {
+                    return finish(false, 'Ad SDK is still loading. Please tap again in 2 seconds.');
+                }
+                const startTime = Date.now();
+                window.show_12250655()
+                    .then(() => {
+                        const elapsedSec = (Date.now() - startTime) / 1000;
+                        if (elapsedSec < MIN_AD_SECONDS) {
+                            const errMsg = `Ad closed too early (${Math.floor(elapsedSec)}s/${MIN_AD_SECONDS}s). Watch full ad to get reward!`;
+                            if (tg?.showAlert) tg.showAlert(errMsg);
+                            finish(false, errMsg);
+                        } else {
+                            finish(true);
+                        }
+                    })
+                    .catch(() => {
+                        finish(false, 'Ad was closed or unavailable. No reward granted.');
+                    });
+            };
+
+            if (globalConfig.useAdsgram && window.Adsgram) {
+                try {
+                    const startTime = Date.now();
+                    const AdController = window.Adsgram.init({ blockId: "59456" });
+                    AdController.show()
+                        .then((res) => {
+                            const elapsedSec = (Date.now() - startTime) / 1000;
+                            if (res && res.done && elapsedSec >= MIN_AD_SECONDS) {
+                                finish(true);
+                            } else {
+                                playMonetagInternal();
+                            }
+                        })
+                        .catch(() => playMonetagInternal());
+                } catch (e) {
+                    playMonetagInternal();
+                }
+            } else {
+                playMonetagInternal();
+            }
+        }
+
+        // ==========================================
+        // 4. HOME AD, DAILY CHECK-IN & PROMO CODE (ALL REQUIRE FULL AD)
+        // ==========================================
+        function handleWatchAd() {
+            const btn = document.getElementById('watch-ad-btn');
+            const btnText = document.getElementById('watch-ad-text');
+            const statusEl = document.getElementById('ad-status-msg');
+
+            btn.disabled = true;
+            btnText.textContent = 'Watching Ad...';
+            statusEl.textContent = `Watch full ad (${MIN_AD_SECONDS}s+) to earn +${globalConfig.adReward} VOLT...`;
+            statusEl.className = 'text-xs text-gray-400 mt-2 h-4';
+
+            runStrictVerifiedAd(
+                async () => {
+                    userState.balance += globalConfig.adReward;
+                    userState.adsWatched += 1;
+                    await saveUserToCloud();
+                    statusEl.textContent = `+${globalConfig.adReward} VOLT earned!`;
+                    statusEl.className = 'text-xs text-emerald-400 mt-2 h-4';
+                    btn.disabled = false;
+                    btnText.textContent = `Watch Ad (+${globalConfig.adReward} VOLT)`;
+                    if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                },
+                (errMsg) => {
+                    statusEl.textContent = errMsg;
+                    statusEl.className = 'text-xs text-red-400 mt-2 h-4';
+                    btn.disabled = false;
+                    btnText.textContent = `Watch Ad (+${globalConfig.adReward} VOLT)`;
+                }
+            );
+        }
+
+        function claimDaily() {
+            const today = new Date().toDateString();
+            if (userState.lastDaily === today) return;
+
+            const dailyBtn = document.getElementById('daily-btn');
+            dailyBtn.disabled = true;
+            dailyBtn.textContent = 'Ad...';
+
+            runStrictVerifiedAd(
+                async () => {
+                    userState.lastDaily = today;
+                    userState.balance += DAILY_REWARD;
+                    await saveUserToCloud();
+                    if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                    if (tg?.showAlert) tg.showAlert(`Daily Check-in complete! +${DAILY_REWARD} VOLT added.`);
+                },
+                () => {
+                    dailyBtn.disabled = false;
+                    dailyBtn.textContent = 'Claim';
+                }
+            );
+        }
+
+        async function redeemPromoCode() {
+            const input = document.getElementById('promo-code-input');
+            const btn = document.getElementById('promo-btn');
+            const statusEl = document.getElementById('promo-status-msg');
+            const code = input.value.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '');
+
+            const showPromoStatus = (msg, isErr = true) => {
+                statusEl.textContent = msg;
+                statusEl.className = `text-[11px] ${isErr ? 'text-red-400' : 'text-emerald-400'} block`;
+            };
+
+            if (!code) {
+                return showPromoStatus('Please enter a promo code first.');
+            }
+            if (userState.usedPromos.includes(code)) {
+                return showPromoStatus('You have already redeemed this promo code.');
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Checking...';
+            showPromoStatus('Verifying promo code...', false);
+
+            await loadPromosFromCloud();
+            const promo = globalPromos[code];
+
+            if (!promo || !promo.reward) {
+                btn.disabled = false;
+                btn.textContent = 'Redeem';
+                return showPromoStatus('Invalid or expired promo code.');
+            }
+
+            const usedCount = Number(promo.usedCount || 0);
+            const maxUses = Number(promo.maxUses || 0);
+            if (maxUses > 0 && usedCount >= maxUses) {
+                btn.disabled = false;
+                btn.textContent = 'Redeem';
+                return showPromoStatus('This promo code has reached its max limit.');
+            }
+
+            // Valid code -> Now force user to watch the full ad before granting reward!
+            btn.textContent = 'Watch Ad...';
+            showPromoStatus(`Valid code (+${promo.reward} VOLT)! Watch full ad (${MIN_AD_SECONDS}s+) to claim...`, false);
+
+            runStrictVerifiedAd(
+                async () => {
+                    // Re-check cloud limit after ad finishes
+                    await loadPromosFromCloud();
+                    const freshPromo = globalPromos[code];
+                    const freshUsed = Number((freshPromo && freshPromo.usedCount) || 0);
+                    if (!freshPromo || (freshPromo.maxUses > 0 && freshUsed >= freshPromo.maxUses)) {
+                        btn.disabled = false;
+                        btn.textContent = 'Redeem';
+                        return showPromoStatus('Sorry, promo code limit just filled up.');
+                    }
+
+                    const rewardAmt = Number(freshPromo.reward);
+                    userState.usedPromos.push(code);
+                    userState.balance += rewardAmt;
+                    await saveUserToCloud();
+
+                    // Increment global usage counter in Firebase
+                    try {
+                        await fetch(`${FIREBASE_DB_URL}/promocodes/${code}.json`, {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ usedCount: freshUsed + 1 })
+                        });
+                    } catch (e) { console.error(e); }
+
+                    input.value = '';
+                    btn.disabled = false;
+                    btn.textContent = 'Redeem';
+                    showPromoStatus(`Success! +${rewardAmt} VOLT redeemed from ${code}!`, false);
+                    if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                    if (tg?.showAlert) tg.showAlert(`Promo Code ${code} redeemed! +${rewardAmt} VOLT added!`);
+                },
+                (errMsg) => {
+                    btn.disabled = false;
+                    btn.textContent = 'Redeem';
+                    showPromoStatus(errMsg, true);
+                }
+            );
+        }
+
+        // ==========================================
+        // 5. REFERRAL SYSTEM (+50 VOLT)
         // ==========================================
         async function processReferralOnStart() {
             const urlParams = new URLSearchParams(window.location.search);
@@ -424,7 +676,6 @@
             const referrerId = String(startParam).trim();
             if (!referrerId || referrerId === String(user.id) || userState.referredBy) return;
 
-            // Check cloud first in case webhook already credited it
             await loadUserFromCloud();
             if (userState.referredBy) return;
 
@@ -451,7 +702,7 @@
         }
 
         // ==========================================
-        // 4. REAL CHANNEL JOIN VERIFICATION
+        // 6. REAL CHANNEL JOIN VERIFICATION
         // ==========================================
         function extractChannelUsername(url) {
             if (!url) return null;
@@ -528,7 +779,7 @@
         }
 
         // ==========================================
-        // 5. UI RENDERING
+        // 7. UI RENDERING
         // ==========================================
         function maskAddress(addr) {
             if (!addr || addr.length < 12) return addr;
@@ -620,6 +871,24 @@
                     toggleBtn.className = 'px-3 py-1.5 rounded-lg bg-yellow-500/20 text-yellow-300 font-bold';
                 }
 
+                // Render Active Promo Codes in Admin Panel
+                const adminPromosDiv = document.getElementById('admin-promos-list');
+                const promoEntries = Object.entries(globalPromos || {});
+                if (promoEntries.length > 0) {
+                    adminPromosDiv.innerHTML = promoEntries.map(([code, p]) => `
+                        <div class="flex items-center justify-between text-xs bg-black/40 p-2 rounded border border-white/5">
+                            <div>
+                                <span onclick="copyText('${code}', 'Code ${code} copied!')" class="font-mono font-bold text-yellow-400 cursor-pointer">${code}</span>
+                                <span class="text-gray-300 ml-1.5">+${p.reward} VOLT</span>
+                                <span class="text-[10px] text-gray-500 ml-1">(${p.usedCount || 0}/${p.maxUses || '∞'})</span>
+                            </div>
+                            <button onclick="adminDeletePromo('${code}')" class="text-red-400 font-bold px-2">Delete</button>
+                        </div>
+                    `).join('');
+                } else {
+                    adminPromosDiv.innerHTML = '<div class="text-[11px] text-gray-500">No active promo codes.</div>';
+                }
+
                 const adminTasksDiv = document.getElementById('admin-tasks-manage');
                 adminTasksDiv.innerHTML = (globalConfig.tasks || []).map((t, i) => `
                     <div class="flex items-center justify-between text-xs bg-black/30 p-2 rounded">
@@ -655,72 +924,7 @@
         }
 
         // ==========================================
-        // 6. AD ENGINE
-        // ==========================================
-        function rewardUserForAd() {
-            userState.balance += globalConfig.adReward;
-            userState.adsWatched += 1;
-            saveUserToCloud();
-            const statusEl = document.getElementById('ad-status-msg');
-            statusEl.textContent = `+${globalConfig.adReward} VOLT earned!`;
-            statusEl.className = 'text-xs text-emerald-400 mt-2 h-4';
-            if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-        }
-
-        function playMonetag(btn, btnText, statusEl) {
-            statusEl.textContent = `Watch the full ad (${MIN_AD_SECONDS}s+) to earn VOLT...`;
-            if (typeof window.show_12250655 === 'function') {
-                const startTime = Date.now();
-                window.show_12250655()
-                    .then(() => {
-                        const elapsedSec = (Date.now() - startTime) / 1000;
-                        if (elapsedSec < MIN_AD_SECONDS) {
-                            statusEl.textContent = `Ad closed too early (${Math.floor(elapsedSec)}s). Watch completely for reward!`;
-                            statusEl.className = 'text-xs text-red-400 mt-2 h-4';
-                            if (tg?.showAlert) tg.showAlert('You closed the ad too early! Please watch the full ad to earn VOLT.');
-                        } else {
-                            rewardUserForAd();
-                        }
-                    })
-                    .catch(() => {
-                        statusEl.textContent = 'Ad closed or unavailable. No reward given.';
-                        statusEl.className = 'text-xs text-amber-400 mt-2 h-4';
-                    })
-                    .finally(() => {
-                        btn.disabled = false;
-                        btnText.textContent = `Watch Ad (+${globalConfig.adReward} VOLT)`;
-                    });
-            } else {
-                statusEl.textContent = 'Ad SDK loading... Tap again in 2s.';
-                statusEl.className = 'text-xs text-amber-400 mt-2 h-4';
-                btn.disabled = false;
-                btnText.textContent = `Watch Ad (+${globalConfig.adReward} VOLT)`;
-            }
-        }
-
-        function handleWatchAd() {
-            const btn = document.getElementById('watch-ad-btn');
-            const btnText = document.getElementById('watch-ad-text');
-            const statusEl = document.getElementById('ad-status-msg');
-            btn.disabled = true;
-            btnText.textContent = 'Watching Ad...';
-
-            if (globalConfig.useAdsgram && window.Adsgram) {
-                try {
-                    const AdController = window.Adsgram.init({ blockId: "59456" });
-                    AdController.show()
-                        .then((res) => (res && res.done) ? (rewardUserForAd(), btn.disabled = false, btnText.textContent = `Watch Ad (+${globalConfig.adReward} VOLT)`) : playMonetag(btn, btnText, statusEl))
-                        .catch(() => playMonetag(btn, btnText, statusEl));
-                } catch (e) {
-                    playMonetag(btn, btnText, statusEl);
-                }
-            } else {
-                playMonetag(btn, btnText, statusEl);
-            }
-        }
-
-        // ==========================================
-        // 7. WITHDRAW SYSTEM
+        // 8. WITHDRAW SYSTEM
         // ==========================================
         async function submitWithdraw() {
             const addr = document.getElementById('ton-address').value.trim();
@@ -809,8 +1013,43 @@
         }
 
         // ==========================================
-        // 8. OWNER ADMIN ACTIONS
+        // 9. OWNER ADMIN ACTIONS (PROMO CODES, TASKS, CONFIG)
         // ==========================================
+        async function adminAddPromoCode() {
+            const code = document.getElementById('new-promo-code').value.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '');
+            const reward = parseInt(document.getElementById('new-promo-reward').value, 10);
+            const maxUses = parseInt(document.getElementById('new-promo-limit').value, 10) || 100;
+
+            if (!code || !reward || reward <= 0) {
+                return tg?.showAlert ? tg.showAlert('Enter valid code and VOLT reward!') : alert('Invalid promo inputs');
+            }
+
+            try {
+                await fetch(`${FIREBASE_DB_URL}/promocodes/${code}.json`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        reward,
+                        maxUses,
+                        usedCount: 0,
+                        createdAt: Date.now()
+                    })
+                });
+                document.getElementById('new-promo-code').value = '';
+                document.getElementById('new-promo-reward').value = '';
+                document.getElementById('new-promo-limit').value = '';
+                await loadPromosFromCloud();
+                if (tg?.showAlert) tg.showAlert(`Promo code ${code} (+${reward} VOLT) created!`);
+            } catch (e) { console.error(e); }
+        }
+
+        async function adminDeletePromo(code) {
+            try {
+                await fetch(`${FIREBASE_DB_URL}/promocodes/${code}.json`, { method: 'DELETE' });
+                await loadPromosFromCloud();
+            } catch (e) { console.error(e); }
+        }
+
         async function saveTelegramConfig() {
             globalConfig.botToken = document.getElementById('admin-bot-token').value.trim();
             globalConfig.channelId = document.getElementById('admin-channel-id').value.trim() || '@GoldenSteal';
@@ -845,14 +1084,6 @@
             if (amt) { userState.balance += amt; document.getElementById('admin-add-volt').value = ''; saveUserToCloud(); }
         }
 
-        function claimDaily() {
-            const today = new Date().toDateString();
-            if (userState.lastDaily === today) return;
-            userState.lastDaily = today;
-            userState.balance += 10;
-            saveUserToCloud();
-        }
-
         function copyRefLink() { copyText(document.getElementById('ref-link').textContent.trim(), 'Referral link copied!'); }
 
         function switchTab(tab) {
@@ -868,7 +1099,7 @@
             activeNav.classList.remove('text-gray-400');
             activeNav.classList.add('text-yellow-400');
             if (tab === 'tasks' || tab === 'referrals') syncAllFromCloud();
-            if (tab === 'admin') { loadConfigFromCloud(); loadWithdrawalsFromCloud(); }
+            if (tab === 'admin') { loadConfigFromCloud(); loadPromosFromCloud(); loadWithdrawalsFromCloud(); }
         }
 
         // Initial Boot
