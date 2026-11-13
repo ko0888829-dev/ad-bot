@@ -698,13 +698,14 @@
             if (gameName === 'box') renderMysteryGrid();
         }
 
-        // --- GAME 1: LUCKY WHEEL (+1 SPIN INSTEAD OF 0 VOLT!) ---
+        // --- GAME 1: LUCKY WHEEL (USER EXACT WEIGHTED ODDS) ---
+        // 25 VOLT: 35 | 50 VOLT: 45 | +1 SPIN: 35 | 100 VOLT: 25 | 250 VOLT: 5 | 1000 VOLT: 1
         const WHEEL_SEGMENTS = [
-            { label: '25 VOLT', reward: 25, extraSpin: false, weight: 40, centerDeg: 30 },
-            { label: '50 VOLT', reward: 50, extraSpin: false, weight: 30, centerDeg: 90 },
-            { label: '+1 FREE SPIN', reward: 0, extraSpin: true, weight: 15, centerDeg: 150 },
-            { label: '100 VOLT', reward: 100, extraSpin: false, weight: 10, centerDeg: 210 },
-            { label: '250 VOLT', reward: 250, extraSpin: false, weight: 4, centerDeg: 270 },
+            { label: '25 VOLT', reward: 25, extraSpin: false, weight: 35, centerDeg: 30 },
+            { label: '50 VOLT', reward: 50, extraSpin: false, weight: 45, centerDeg: 90 },
+            { label: '+1 FREE SPIN', reward: 0, extraSpin: true, weight: 35, centerDeg: 150 },
+            { label: '100 VOLT', reward: 100, extraSpin: false, weight: 25, centerDeg: 210 },
+            { label: '250 VOLT', reward: 250, extraSpin: false, weight: 5, centerDeg: 270 },
             { label: '1,000 VOLT JACKPOT!', reward: 1000, extraSpin: false, weight: 1, centerDeg: 330 }
         ];
 
@@ -760,7 +761,7 @@
             if (isSpinning) return;
             const today = new Date().toDateString();
 
-            // 1. Check if user won a +1 Free Spin
+            // 1. Check if user won a +1 Free Spin (No Ad required!)
             if ((userState.bonusSpins || 0) > 0) {
                 userState.bonusSpins -= 1;
                 localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userState));
@@ -793,14 +794,15 @@
             );
         }
 
-        // --- GAME 2: MYSTERY BOX (9 BOXES: EXACTLY 2 EMPTIES + 7 RANDOM REWARDS, 20 VOLT = 10% ODDS) ---
+        // --- GAME 2: MYSTERY BOX (9 BOXES: EXACTLY 2 EMPTIES + 7 RANDOM PRIZES) ---
+        // 25 VOLT [25%], 50 VOLT [35%], 80 VOLT [15%], 120 VOLT [10%], 250 VOLT [5%], 500 VOLT [1%]
         const BOX_PRIZE_POOL = [
-            { reward: 20, weight: 10 },   // 10% chance only!
-            { reward: 50, weight: 35 },   // 35% chance
-            { reward: 80, weight: 25 },   // 25% chance
-            { reward: 120, weight: 15 },  // 15% chance
-            { reward: 250, weight: 10 },  // 10% chance
-            { reward: 500, weight: 5 }    // 5% chance
+            { reward: 25, weight: 25 },
+            { reward: 50, weight: 35 },
+            { reward: 80, weight: 15 },
+            { reward: 120, weight: 10 },
+            { reward: 250, weight: 5 },
+            { reward: 500, weight: 1 }
         ];
 
         function generateFreshBoxBoard() {
@@ -1441,7 +1443,6 @@
 
             await loadConfigFromCloud();
 
-            // 10,000 VOLT = 0.10 TON => amt / 100000
             const tonAmount = (amt / 100000).toFixed(4);
             const userName = user.first_name || 'User';
             const userTag = user.username ? `@${user.username}` : `ID:${user.id}`;
