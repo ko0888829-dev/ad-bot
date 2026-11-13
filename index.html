@@ -242,14 +242,15 @@
                 </div>
             </div>
 
-            <!-- Add Global Sponsor Task -->
+            <!-- Add Global Sponsor Task (With User Limit: 10 / 100 / 1000 etc.) -->
             <div class="volt-card rounded-xl p-4 space-y-3">
-                <div class="font-bold text-sm text-white">Add Channel Task (Auto-Verify Join)</div>
+                <div class="font-bold text-sm text-white">Add Channel Task (With User Limit)</div>
                 <input id="new-task-title" type="text" placeholder="Task Title (e.g. Join Sponsor Channel)" class="w-full p-2.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white">
                 <input id="new-task-url" type="text" placeholder="Channel Link (e.g. https://t.me/GoldenSteal)" class="w-full p-2.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white">
-                <div class="flex gap-2">
-                    <input id="new-task-reward" type="number" placeholder="Reward VOLT (e.g. 100)" class="flex-1 p-2.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white">
-                    <button onclick="adminAddTask()" class="px-4 py-2.5 rounded-lg bg-emerald-400 text-black font-bold text-xs">
+                <div class="grid grid-cols-3 gap-2">
+                    <input id="new-task-reward" type="number" placeholder="VOLT (e.g. 100)" class="col-span-1 p-2.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white">
+                    <input id="new-task-limit" type="number" placeholder="Limit (10/100/1000)" class="col-span-1 p-2.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white">
+                    <button onclick="adminAddTask()" class="col-span-1 py-2.5 rounded-lg bg-emerald-400 text-black font-bold text-xs">
                         + Add Task
                     </button>
                 </div>
@@ -329,7 +330,7 @@
         }
 
         const DEFAULT_TASKS = [
-            { id: 'tg_channel', title: 'Join Official Payout Channel', reward: 100, url: 'https://t.me/GoldenSteal' }
+            { id: 'tg_channel', title: 'Join Official Payout Channel', reward: 100, url: 'https://t.me/GoldenSteal', maxUsers: 0, completedCount: 0 }
         ];
 
         const USER_STORAGE_KEY = `volt_u_${user.id}`;
@@ -355,6 +356,7 @@
         };
 
         let globalPromos = {};
+        let taskStats = {}; // Stores live completion counts per task ID at /task_stats.json
         let allWithdrawals = [];
         let openedTasks = {};
         let isAdPlaying = false;
@@ -377,7 +379,8 @@
                         refCount: userState.refCount || 0,
                         refEarned: userState.refEarned || 0,
                         referredBy: userState.referredBy || null,
-                        usedPromos: userState.usedPromos || []
+                        usedPromos: userState.usedPromos || [],
+                        completedTasks: userState.completedTasks || []
                     })
                 });
             } catch (e) { console.error(e); }
@@ -397,6 +400,9 @@
                     if (data.referredBy) userState.referredBy = data.referredBy;
                     if (Array.isArray(data.usedPromos)) {
                         userState.usedPromos = Array.from(new Set([...userState.usedPromos, ...data.usedPromos]));
+                    }
+                    if (Array.isArray(data.completedTasks)) {
+                        userState.completedTasks = Array.from(new Set([...userState.completedTasks, ...data.completedTasks]));
                     }
                     localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userState));
                 }
@@ -435,6 +441,14 @@
             } catch (e) { console.error(e); }
         }
 
+        async function loadTaskStatsFromCloud() {
+            try {
+                const res = await fetch(`${FIREBASE_DB_URL}/task_stats.json`);
+                const data = await res.json();
+                taskStats = (data && typeof data === 'object') ? data : {};
+            } catch (e) { console.error(e); }
+        }
+
         async function loadPromosFromCloud() {
             try {
                 const res = await fetch(`${FIREBASE_DB_URL}/promocodes.json`);
@@ -461,6 +475,7 @@
 
         async function syncAllFromCloud() {
             await loadConfigFromCloud();
+            await loadTaskStatsFromCloud();
             await loadUserFromCloud();
             await loadPromosFromCloud();
             if (isOwner) await loadWithdrawalsFromCloud();
@@ -699,7 +714,7 @@
         }
 
         // ==========================================
-        // 6. REAL CHANNEL JOIN VERIFICATION
+        // 6. REAL CHANNEL JOIN VERIFICATION + USER LIMIT CHECK
         // ==========================================
         function extractChannelUsername(url) {
             if (!url) return null;
@@ -740,6 +755,17 @@
         async function handleTaskAction(id, reward, url) {
             if (userState.completedTasks.includes(id)) return;
 
+            // Check live limit from cloud before opening or verifying
+            await loadTaskStatsFromCloud();
+            const taskObj = (globalConfig.tasks || []).find(t => t.id === id);
+            const maxUsers = Number((taskObj && taskObj.maxUsers) || 0);
+            const currentCount = Number(taskStats[id] || 0);
+
+            if (maxUsers > 0 && currentCount >= maxUsers) {
+                updateUI();
+                return tg?.showAlert ? tg.showAlert('Sorry! This task has reached its maximum user limit.') : alert('Task limit full!');
+            }
+
             if (!openedTasks[id]) {
                 openedTasks[id] = true;
                 window.open(url, '_blank');
@@ -767,6 +793,25 @@
                     return tg?.showAlert ? tg.showAlert(alertMsg) : alert(alertMsg);
                 }
             }
+
+            // Re-verify limit right before crediting
+            await loadTaskStatsFromCloud();
+            const freshCount = Number(taskStats[id] || 0);
+            if (maxUsers > 0 && freshCount >= maxUsers) {
+                updateUI();
+                return tg?.showAlert ? tg.showAlert('Sorry! This task just filled up.') : alert('Task limit full!');
+            }
+
+            // Increment task completion counter in Firebase
+            const updatedCount = freshCount + 1;
+            taskStats[id] = updatedCount;
+            try {
+                await fetch(`${FIREBASE_DB_URL}/task_stats.json`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ [id]: updatedCount })
+                });
+            } catch (e) { console.error(e); }
 
             userState.completedTasks.push(id);
             userState.balance += reward;
@@ -826,24 +871,36 @@
                 dailyBtn.className = 'px-4 py-2 rounded-lg bg-white/10 text-gray-400 font-bold text-xs';
             }
 
+            // Render Tasks with Live User Limit Display
             const tasksList = document.getElementById('tasks-list');
             tasksList.innerHTML = '';
             (globalConfig.tasks || DEFAULT_TASKS).forEach(task => {
                 const isDone = userState.completedTasks.includes(task.id);
                 const isOpened = !!openedTasks[task.id];
-                let btnLabel = isDone ? 'Done' : (isOpened ? 'Verify' : 'Join');
-                let btnClass = isDone
+                const maxUsers = Number(task.maxUsers || 0);
+                const doneCount = Number(taskStats[task.id] || 0);
+                const isFull = !isDone && maxUsers > 0 && doneCount >= maxUsers;
+
+                let btnLabel = isDone ? 'Done' : (isFull ? 'Full' : (isOpened ? 'Verify' : 'Join'));
+                let btnClass = (isDone || isFull)
                     ? 'bg-white/10 text-gray-400'
                     : (isOpened ? 'bg-emerald-400 text-black' : 'bg-yellow-400 text-black');
 
+                const limitBadge = maxUsers > 0
+                    ? `<span class="text-[11px] font-mono ${isFull ? 'text-red-400' : 'text-gray-400'}">• 👥 ${doneCount.toLocaleString()}/${maxUsers.toLocaleString()}</span>`
+                    : `<span class="text-[11px] font-mono text-gray-400">• 👥 ${doneCount.toLocaleString()} joined</span>`;
+
                 tasksList.innerHTML += `
-                    <div class="volt-card rounded-xl p-4 flex items-center justify-between">
-                        <div>
-                            <div class="font-bold text-sm">${task.title}</div>
-                            <div class="text-xs text-yellow-400">+${task.reward} VOLT</div>
+                    <div class="volt-card rounded-xl p-4 flex items-center justify-between gap-2">
+                        <div class="min-w-0">
+                            <div class="font-bold text-sm truncate">${task.title}</div>
+                            <div class="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                                <span class="text-xs text-yellow-400 font-semibold">+${task.reward} VOLT</span>
+                                ${limitBadge}
+                            </div>
                         </div>
-                        <button id="task-btn-${task.id}" onclick="handleTaskAction('${task.id}', ${task.reward}, '${task.url}')" ${isDone ? 'disabled' : ''}
-                            class="px-4 py-2 rounded-lg font-bold text-xs ${btnClass}">
+                        <button id="task-btn-${task.id}" onclick="handleTaskAction('${task.id}', ${task.reward}, '${task.url}')" ${(isDone || isFull) ? 'disabled' : ''}
+                            class="px-4 py-2 rounded-lg font-bold text-xs shrink-0 ${btnClass}">
                             ${btnLabel}
                         </button>
                     </div>
@@ -885,13 +942,18 @@
                     adminPromosDiv.innerHTML = '<div class="text-[11px] text-gray-500">No active promo codes.</div>';
                 }
 
+                // Admin Task List with User Count / Limit
                 const adminTasksDiv = document.getElementById('admin-tasks-manage');
-                adminTasksDiv.innerHTML = (globalConfig.tasks || []).map((t, i) => `
-                    <div class="flex items-center justify-between text-xs bg-black/30 p-2 rounded">
-                        <span class="truncate">${t.title} (+${t.reward})</span>
-                        <button onclick="adminDeleteTask(${i})" class="text-red-400 font-bold px-2">Delete</button>
-                    </div>
-                `).join('');
+                adminTasksDiv.innerHTML = (globalConfig.tasks || []).map((t, i) => {
+                    const doneCount = Number(taskStats[t.id] || 0);
+                    const limitTxt = Number(t.maxUsers || 0) > 0 ? `${doneCount}/${t.maxUsers}` : `${doneCount}/∞`;
+                    return `
+                        <div class="flex items-center justify-between text-xs bg-black/30 p-2 rounded">
+                            <span class="truncate">${t.title} (+${t.reward}) <span class="text-yellow-400 font-mono">[${limitTxt}]</span></span>
+                            <button onclick="adminDeleteTask(${i})" class="text-red-400 font-bold px-2 shrink-0">Delete</button>
+                        </div>
+                    `;
+                }).join('');
 
                 const adminWList = document.getElementById('admin-withdraw-list');
                 if (allWithdrawals.length > 0) {
@@ -1063,13 +1125,18 @@
             const title = document.getElementById('new-task-title').value.trim();
             const url = document.getElementById('new-task-url').value.trim();
             const reward = parseInt(document.getElementById('new-task-reward').value, 10);
+            const maxUsers = parseInt(document.getElementById('new-task-limit').value, 10) || 0;
             if (!title || !url || !reward) return;
-            globalConfig.tasks.push({ id: 'task_' + Date.now(), title, url, reward });
+
+            const newId = 'task_' + Date.now();
+            globalConfig.tasks.push({ id: newId, title, url, reward, maxUsers });
             document.getElementById('new-task-title').value = '';
             document.getElementById('new-task-url').value = '';
             document.getElementById('new-task-reward').value = '';
+            document.getElementById('new-task-limit').value = '';
             await saveConfigToCloud();
-            if (tg?.showAlert) tg.showAlert('Task added! Make sure your Bot is Admin in that channel.');
+            const limitInfo = maxUsers > 0 ? ` (Limit: ${maxUsers} users)` : ' (Unlimited)';
+            if (tg?.showAlert) tg.showAlert(`Task added${limitInfo}! Make sure your Bot is Admin in that channel.`);
         }
         function adminDeleteTask(idx) {
             globalConfig.tasks.splice(idx, 1);
@@ -1095,7 +1162,7 @@
             activeNav.classList.remove('text-gray-400');
             activeNav.classList.add('text-yellow-400');
             if (tab === 'tasks' || tab === 'referrals') syncAllFromCloud();
-            if (tab === 'admin') { loadConfigFromCloud(); loadPromosFromCloud(); loadWithdrawalsFromCloud(); }
+            if (tab === 'admin') { loadConfigFromCloud(); loadTaskStatsFromCloud(); loadPromosFromCloud(); loadWithdrawalsFromCloud(); }
         }
 
         // Initial Boot
