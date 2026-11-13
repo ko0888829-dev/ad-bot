@@ -32,13 +32,8 @@
             color: #000000;
             box-shadow: 0 4px 20px rgba(250, 204, 21, 0.3);
         }
-        .volt-btn:active {
-            transform: scale(0.97);
-        }
-        .volt-btn:disabled {
-            opacity: 0.6;
-            transform: none;
-        }
+        .volt-btn:active { transform: scale(0.97); }
+        .volt-btn:disabled { opacity: 0.6; transform: none; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col pb-24">
@@ -143,7 +138,7 @@
                 </div>
                 <div>
                     <label class="text-xs text-gray-400 block mb-1">TON Wallet Address (Tonkeeper / Telegram Wallet)</label>
-                    <input id="ton-address" type="text" placeholder="UQ... or 0:..." class="w-full p-3 rounded-xl bg-black/50 border border-white/10 text-sm text-white focus:outline-none focus:border-yellow-400">
+                    <input id="ton-address" type="text" placeholder="UQ... or EQ..." class="w-full p-3 rounded-xl bg-black/50 border border-white/10 text-sm text-white focus:outline-none focus:border-yellow-400">
                 </div>
                 <div>
                     <label class="text-xs text-gray-400 block mb-1">Amount (VOLT)</label>
@@ -155,40 +150,45 @@
             </div>
         </div>
 
-        <!-- TAB 5: ADMIN PANEL -->
+        <!-- TAB 5: ADMIN PANEL (ONLY VISIBLE TO OWNER) -->
         <div id="tab-admin" class="hidden space-y-4">
             <div class="flex items-center justify-between">
                 <h2 class="font-bold text-lg text-yellow-400 flex items-center gap-2">
                     <i data-lucide="crown" class="w-5 h-5"></i> Admin Control Panel
                 </h2>
-                <span class="text-[10px] px-2 py-1 rounded bg-yellow-500/20 text-yellow-300 font-mono">OWNER</span>
+                <span class="text-[10px] px-2 py-1 rounded bg-yellow-500/20 text-yellow-300 font-mono">OWNER ONLY</span>
             </div>
 
-            <!-- Payout Channel Bot Config -->
-            <div class="volt-card rounded-xl p-4 space-y-3 border-emerald-500/30">
-                <div class="font-bold text-sm text-emerald-400 flex items-center gap-1.5">
-                    <i data-lucide="send" class="w-4 h-4"></i> Payout Channel Settings (@GoldenSteal)
+            <!-- Global Cloud Sync (Firebase Realtime DB URL) -->
+            <div class="volt-card rounded-xl p-4 space-y-2 border-blue-500/30">
+                <div class="font-bold text-sm text-blue-400 flex items-center gap-1.5">
+                    <i data-lucide="globe" class="w-4 h-4"></i> Global Cloud Database (Tasks & Withdraw Sync)
                 </div>
                 <div class="text-[11px] text-gray-400">
-                    Withdraw နှိပ်တိုင်း Channel ထဲ စာပို့ပေးဖို့ Bot Token ထည့်ထားပါ (Bot ကို Channel မှာ Admin ပေးထားရပါမယ်)။
+                    Task အသစ်ထည့်တာတွေ User အားလုံးဆီ ပေါ်စေဖို့ Firebase Realtime DB URL ထည့်ပါ (ဥပမာ: https://your-app.firebaseio.com)။
                 </div>
-                <input id="admin-bot-token" type="text" placeholder="Bot Token (123456:ABC-DEF...)" class="w-full p-2.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white font-mono">
-                <input id="admin-channel-id" type="text" value="@GoldenSteal" placeholder="@GoldenSteal or -100..." class="w-full p-2.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white font-mono">
-                <button onclick="saveTelegramConfig()" class="w-full py-2.5 rounded-lg bg-emerald-400 text-black font-bold text-xs">
-                    Save Payout Channel Config
-                </button>
+                <div class="flex gap-2">
+                    <input id="admin-firebase-url" type="text" placeholder="https://xxx-default-rtdb.firebaseio.com" class="flex-1 p-2.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white font-mono">
+                    <button onclick="saveFirebaseUrl()" class="px-3 py-2 rounded-lg bg-blue-500 text-white font-bold text-xs">
+                        Connect
+                    </button>
+                </div>
             </div>
 
-            <!-- Stats Overview -->
-            <div class="grid grid-cols-2 gap-3">
-                <div class="volt-card rounded-xl p-3">
-                    <div class="text-[11px] text-gray-400">Ads Watched</div>
-                    <div id="admin-ads-count" class="text-xl font-black text-white mt-1">0</div>
+            <!-- Payout Channel & Admin DM Config -->
+            <div class="volt-card rounded-xl p-4 space-y-3 border-emerald-500/30">
+                <div class="font-bold text-sm text-emerald-400 flex items-center gap-1.5">
+                    <i data-lucide="send" class="w-4 h-4"></i> Payout Channel & Admin Alert Settings
                 </div>
-                <div class="volt-card rounded-xl p-3">
-                    <div class="text-[11px] text-gray-400">Ad Reward</div>
-                    <div id="admin-reward-display" class="text-xl font-black text-yellow-400 mt-1">50 VOLT</div>
+                <div class="text-[11px] text-gray-400">
+                    Withdraw နှိပ်ရင် Channel ထဲ Public Post တင်ပြီး၊ သင့် DM ဆီကို <b>Full TON Address</b> ပို့ပေးပါမယ်။
                 </div>
+                <input id="admin-bot-token" type="text" placeholder="Bot Token (123456:ABC-DEF...)" class="w-full p-2.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white font-mono">
+                <input id="admin-channel-id" type="text" value="@GoldenSteal" placeholder="Public Channel (@GoldenSteal)" class="w-full p-2.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white font-mono">
+                <input id="admin-chat-id" type="text" placeholder="Your Admin Telegram ID (e.g. 123456789)" class="w-full p-2.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white font-mono">
+                <button onclick="saveTelegramConfig()" class="w-full py-2.5 rounded-lg bg-emerald-400 text-black font-bold text-xs">
+                    Save Payout Settings
+                </button>
             </div>
 
             <!-- Ad Network Switch & Reward Config -->
@@ -196,45 +196,46 @@
                 <div class="font-bold text-sm text-white">Ad Network & Reward Settings</div>
                 <div class="flex items-center justify-between text-xs">
                     <span class="text-gray-300">Primary Adsgram (59456)</span>
-                    <button id="toggle-adsgram-btn" onclick="toggleAdsgram()" class="px-3 py-1.5 rounded-lg bg-white/10 text-gray-300 font-bold">
+                    <button id="toggle-adsgram-btn" onclick="toggleAdsgram()" class="px-3 py-1.5 rounded-lg bg-yellow-500/20 text-yellow-300 font-bold">
                         OFF (Monetag Direct)
                     </button>
                 </div>
                 <div class="flex gap-2">
-                    <input id="admin-new-reward" type="number" placeholder="Reward per ad (e.g. 50)" class="flex-1 p-2.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white">
+                    <input id="admin-new-reward" type="number" placeholder="Reward per ad (Current: 50)" class="flex-1 p-2.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white">
                     <button onclick="updateAdReward()" class="px-4 py-2.5 rounded-lg bg-yellow-400 text-black font-bold text-xs">
                         Save
                     </button>
                 </div>
             </div>
 
-            <!-- Add Custom Sponsor Task -->
+            <!-- Add Global Sponsor Task -->
             <div class="volt-card rounded-xl p-4 space-y-3">
-                <div class="font-bold text-sm text-white">Add New Sponsor Task</div>
-                <input id="new-task-title" type="text" placeholder="Task Title" class="w-full p-2.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white">
+                <div class="font-bold text-sm text-white">Add Global Task (Shows for ALL Users)</div>
+                <input id="new-task-title" type="text" placeholder="Task Title (e.g. Join VIP Channel)" class="w-full p-2.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white">
                 <input id="new-task-url" type="text" placeholder="Link (https://t.me/...)" class="w-full p-2.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white">
                 <div class="flex gap-2">
-                    <input id="new-task-reward" type="number" placeholder="Reward VOLT" class="flex-1 p-2.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white">
+                    <input id="new-task-reward" type="number" placeholder="Reward VOLT (e.g. 100)" class="flex-1 p-2.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white">
                     <button onclick="adminAddTask()" class="px-4 py-2.5 rounded-lg bg-emerald-400 text-black font-bold text-xs">
                         + Add Task
                     </button>
                 </div>
+                <div id="admin-tasks-manage" class="space-y-1.5 pt-2 border-t border-white/10"></div>
             </div>
 
             <!-- Quick Balance Adjust (Testing) -->
             <div class="volt-card rounded-xl p-4 space-y-3">
                 <div class="font-bold text-sm text-white">Test / Adjust My VOLT Balance</div>
                 <div class="flex gap-2">
-                    <input id="admin-add-volt" type="number" placeholder="Amount (e.g. 40000)" class="flex-1 p-2.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white">
+                    <input id="admin-add-volt" type="number" placeholder="Amount (e.g. 5000)" class="flex-1 p-2.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white">
                     <button onclick="adminAddBalance()" class="px-4 py-2.5 rounded-lg bg-yellow-400 text-black font-bold text-xs">
                         + Add VOLT
                     </button>
                 </div>
             </div>
 
-            <!-- Pending Withdrawals -->
+            <!-- Pending Withdrawals (With Full Copyable Address!) -->
             <div class="volt-card rounded-xl p-4 space-y-2">
-                <div class="font-bold text-sm text-white">Withdrawal Requests (Tap Mark Paid to post in Channel)</div>
+                <div class="font-bold text-sm text-white">Withdrawal Requests (Tap Address to Copy)</div>
                 <div id="admin-withdraw-list" class="text-xs text-gray-400 space-y-2">No pending requests.</div>
             </div>
         </div>
@@ -259,7 +260,8 @@
             <i data-lucide="wallet" class="w-5 h-5"></i>
             <span class="text-[10px] font-semibold">Withdraw</span>
         </button>
-        <button onclick="switchTab('admin')" id="nav-admin" class="nav-item flex flex-col items-center gap-1 text-gray-400 p-2">
+        <!-- Hidden by default; only shown if user is Owner -->
+        <button onclick="switchTab('admin')" id="nav-admin" class="hidden nav-item flex flex-col items-center gap-1 text-gray-400 p-2">
             <i data-lucide="crown" class="w-5 h-5"></i>
             <span class="text-[10px] font-semibold">Admin</span>
         </button>
@@ -273,29 +275,90 @@
             tg.expand();
         }
 
-        const user = tg?.initDataUnsafe?.user || { id: 'demo_user', first_name: 'Kim', username: 'Dragonchou18' };
-        const STORAGE_KEY = `volt_v3_${user.id}`;
+        // ==========================================
+        // 1. OWNER SECURITY LOCK (ONLY YOU CAN SEE ADMIN)
+        // ==========================================
+        const OWNER_USERNAMES = ['dragonchou18']; // သင့် Telegram Username (စာလုံးအသေးဖြင့်)
+        const OWNER_IDS = []; // လိုအပ်ပါက သင့် Numeric Telegram ID ထည့်နိုင်သည်
 
-        const defaultTasks = [
+        const user = tg?.initDataUnsafe?.user || { id: 'demo_user', first_name: 'Kim', username: 'Dragonchou18' };
+        const isOwner = OWNER_USERNAMES.includes((user.username || '').toLowerCase()) || OWNER_IDS.includes(Number(user.id));
+
+        if (isOwner) {
+            document.getElementById('nav-admin').classList.remove('hidden');
+        }
+
+        // ==========================================
+        // 2. GLOBAL CONFIG & STATE
+        // ==========================================
+        // Default Global Config (Hardcode your Firebase URL & Bot Token here if you want instant global sync without typing in UI)
+        const DEFAULT_CONFIG = {
+            firebaseUrl: localStorage.getItem('volt_firebase_url') || '',
+            botToken: localStorage.getItem('volt_bot_token') || '',
+            channelId: localStorage.getItem('volt_channel_id') || '@GoldenSteal',
+            adminChatId: localStorage.getItem('volt_admin_chat_id') || (isOwner && user.id !== 'demo_user' ? String(user.id) : '')
+        };
+
+        const DEFAULT_TASKS = [
             { id: 'tg_channel', title: 'Join Official Payout Channel', reward: 100, url: 'https://t.me/GoldenSteal' }
         ];
 
-        let state = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {
+        const USER_STORAGE_KEY = `volt_user_${user.id}`;
+        let userState = JSON.parse(localStorage.getItem(USER_STORAGE_KEY)) || {
             balance: 0,
             lastDaily: null,
             completedTasks: [],
-            adsWatched: 0,
+            adsWatched: 0
+        };
+
+        let globalData = JSON.parse(localStorage.getItem('volt_global_cache')) || {
             adReward: 50,
             useAdsgram: false,
-            botToken: '', // Admin Panel ကနေ ထည့်သိမ်းပါ
-            channelId: '@GoldenSteal',
-            customTasks: defaultTasks,
+            tasks: DEFAULT_TASKS,
             withdrawals: []
         };
 
-        function saveState() {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        function saveUserState() {
+            localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userState));
             updateUI();
+        }
+
+        async function syncGlobalToCloud() {
+            localStorage.setItem('volt_global_cache', JSON.stringify(globalData));
+            updateUI();
+            if (DEFAULT_CONFIG.firebaseUrl) {
+                try {
+                    const cleanUrl = DEFAULT_CONFIG.firebaseUrl.replace(/\/$/, '');
+                    await fetch(`${cleanUrl}/volt_global.json`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(globalData)
+                    });
+                } catch (e) {
+                    console.error('Cloud sync save error:', e);
+                }
+            }
+        }
+
+        async function loadGlobalFromCloud() {
+            if (!DEFAULT_CONFIG.firebaseUrl) return;
+            try {
+                const cleanUrl = DEFAULT_CONFIG.firebaseUrl.replace(/\/$/, '');
+                const res = await fetch(`${cleanUrl}/volt_global.json`);
+                const data = await res.json();
+                if (data) {
+                    globalData = {
+                        adReward: data.adReward || 50,
+                        useAdsgram: !!data.useAdsgram,
+                        tasks: data.tasks || DEFAULT_TASKS,
+                        withdrawals: data.withdrawals || []
+                    };
+                    localStorage.setItem('volt_global_cache', JSON.stringify(globalData));
+                    updateUI();
+                }
+            } catch (e) {
+                console.error('Cloud sync load error:', e);
+            }
         }
 
         function maskAddress(addr) {
@@ -303,17 +366,19 @@
             return `${addr.slice(0, 6)}....${addr.slice(-6)}`;
         }
 
-        async function sendTelegramChannelLog(text) {
-            if (!state.botToken || !state.channelId) {
-                console.warn('Bot Token or Channel ID not configured in Admin Panel.');
-                return false;
-            }
+        function copyText(text, label = 'Copied!') {
+            navigator.clipboard.writeText(text);
+            if (tg?.showAlert) tg.showAlert(label);
+        }
+
+        async function sendTelegramMessage(chatId, text) {
+            if (!DEFAULT_CONFIG.botToken || !chatId) return false;
             try {
-                const res = await fetch(`https://api.telegram.org/bot${state.botToken}/sendMessage`, {
+                const res = await fetch(`https://api.telegram.org/bot${DEFAULT_CONFIG.botToken}/sendMessage`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        chat_id: state.channelId,
+                        chat_id: chatId,
                         text: text,
                         parse_mode: 'HTML',
                         disable_web_page_preview: true
@@ -327,43 +392,31 @@
             }
         }
 
+        // ==========================================
+        // 3. UI RENDERING
+        // ==========================================
         function updateUI() {
             document.getElementById('user-name').textContent = user.first_name || 'VOLT User';
             document.getElementById('user-username').textContent = user.username ? `@${user.username}` : `ID: ${user.id}`;
             document.getElementById('user-avatar').textContent = (user.first_name || 'V')[0].toUpperCase();
-            document.getElementById('volt-balance').textContent = state.balance.toLocaleString();
+            document.getElementById('volt-balance').textContent = userState.balance.toLocaleString();
             document.getElementById('ref-link').textContent = `https://t.me/Ad_Airdrop_bot?start=${user.id}`;
-            document.getElementById('watch-ad-text').textContent = `Watch Ad (+${state.adReward} VOLT)`;
-
-            // Admin fields
-            document.getElementById('admin-ads-count').textContent = state.adsWatched;
-            document.getElementById('admin-reward-display').textContent = `${state.adReward} VOLT`;
-            if (state.botToken) document.getElementById('admin-bot-token').value = state.botToken;
-            if (state.channelId) document.getElementById('admin-channel-id').value = state.channelId;
-
-            const toggleBtn = document.getElementById('toggle-adsgram-btn');
-            if (state.useAdsgram) {
-                toggleBtn.textContent = 'ON (Adsgram + Monetag)';
-                toggleBtn.className = 'px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-300 font-bold';
-            } else {
-                toggleBtn.textContent = 'OFF (Monetag Direct)';
-                toggleBtn.className = 'px-3 py-1.5 rounded-lg bg-yellow-500/20 text-yellow-300 font-bold';
-            }
+            document.getElementById('watch-ad-text').textContent = `Watch Ad (+${globalData.adReward} VOLT)`;
 
             // Daily status
             const today = new Date().toDateString();
             const dailyBtn = document.getElementById('daily-btn');
-            if (state.lastDaily === today) {
+            if (userState.lastDaily === today) {
                 dailyBtn.textContent = 'Claimed';
                 dailyBtn.disabled = true;
                 dailyBtn.className = 'px-4 py-2 rounded-lg bg-white/10 text-gray-400 font-bold text-xs';
             }
 
-            // Render Tasks
+            // Render Tasks for Users
             const tasksList = document.getElementById('tasks-list');
             tasksList.innerHTML = '';
-            (state.customTasks || defaultTasks).forEach(task => {
-                const isDone = state.completedTasks.includes(task.id);
+            (globalData.tasks || DEFAULT_TASKS).forEach(task => {
+                const isDone = userState.completedTasks.includes(task.id);
                 tasksList.innerHTML += `
                     <div class="volt-card rounded-xl p-4 flex items-center justify-between">
                         <div>
@@ -378,30 +431,65 @@
                 `;
             });
 
-            // Render Admin Withdrawals
-            const adminWList = document.getElementById('admin-withdraw-list');
-            if (state.withdrawals && state.withdrawals.length > 0) {
-                adminWList.innerHTML = state.withdrawals.map((w, idx) => `
-                    <div class="p-2.5 rounded-lg bg-black/40 border border-white/10 flex items-center justify-between">
-                        <div>
-                            <div class="text-white font-bold">${w.userName} • ${w.amount.toLocaleString()} VOLT (${w.tonAmount} TON)</div>
-                            <div class="text-[10px] text-gray-400 font-mono">${maskAddress(w.address)} • ${w.status}</div>
-                        </div>
-                        ${w.status === 'Pending'
-                            ? `<button onclick="approveWithdraw(${idx})" class="px-2.5 py-1.5 rounded bg-emerald-400 text-black font-bold text-[10px]">Mark Paid</button>`
-                            : '<span class="text-emerald-400 text-[10px] font-bold">✅ Paid</span>'}
+            // Owner Admin Panel Render
+            if (isOwner) {
+                document.getElementById('admin-firebase-url').value = DEFAULT_CONFIG.firebaseUrl;
+                document.getElementById('admin-bot-token').value = DEFAULT_CONFIG.botToken;
+                document.getElementById('admin-channel-id').value = DEFAULT_CONFIG.channelId;
+                document.getElementById('admin-chat-id').value = DEFAULT_CONFIG.adminChatId;
+
+                const toggleBtn = document.getElementById('toggle-adsgram-btn');
+                if (globalData.useAdsgram) {
+                    toggleBtn.textContent = 'ON (Adsgram + Monetag)';
+                    toggleBtn.className = 'px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-300 font-bold';
+                } else {
+                    toggleBtn.textContent = 'OFF (Monetag Direct)';
+                    toggleBtn.className = 'px-3 py-1.5 rounded-lg bg-yellow-500/20 text-yellow-300 font-bold';
+                }
+
+                // Manage/Delete Tasks list in Admin
+                const adminTasksDiv = document.getElementById('admin-tasks-manage');
+                adminTasksDiv.innerHTML = (globalData.tasks || []).map((t, i) => `
+                    <div class="flex items-center justify-between text-xs bg-black/30 p-2 rounded">
+                        <span class="truncate">${t.title} (+${t.reward})</span>
+                        <button onclick="adminDeleteTask(${i})" class="text-red-400 font-bold px-2">Delete</button>
                     </div>
                 `).join('');
+
+                // Render Withdrawals with FULL ADDRESS & Copy button
+                const adminWList = document.getElementById('admin-withdraw-list');
+                if (globalData.withdrawals && globalData.withdrawals.length > 0) {
+                    adminWList.innerHTML = globalData.withdrawals.map((w, idx) => `
+                        <div class="p-3 rounded-lg bg-black/50 border border-white/10 space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="text-white font-bold">${w.userName} (${w.userTag || ''})</span>
+                                <span class="text-yellow-400 font-bold">${w.amount.toLocaleString()} VOLT (${w.tonAmount} TON)</span>
+                            </div>
+                            <div onclick="copyText('${w.address}', 'Wallet address copied!')" class="p-2 rounded bg-white/5 border border-white/10 font-mono text-[11px] text-emerald-300 break-all cursor-pointer flex items-center justify-between gap-2">
+                                <span>${w.address}</span>
+                                <span class="text-[10px] bg-white/10 px-1.5 py-0.5 rounded text-white shrink-0">Copy</span>
+                            </div>
+                            <div class="flex items-center justify-between pt-1">
+                                <span class="text-[10px] text-gray-400">${w.date || ''} • Status: ${w.status}</span>
+                                ${w.status === 'Pending'
+                                    ? `<button onclick="approveWithdraw(${idx})" class="px-3 py-1.5 rounded bg-emerald-400 text-black font-bold text-xs">Mark Paid & Post</button>`
+                                    : '<span class="text-emerald-400 text-xs font-bold">✅ Paid</span>'}
+                            </div>
+                        </div>
+                    `).join('');
+                }
             }
         }
 
-        // Ad Engine
+        // ==========================================
+        // 4. AD ENGINE (MONETAG DIRECT + OPTIONAL ADSGRAM)
+        // ==========================================
         function rewardUserForAd() {
-            state.balance += state.adReward;
-            state.adsWatched += 1;
-            saveState();
+            userState.balance += globalData.adReward;
+            userState.adsWatched += 1;
+            saveUserState();
             const statusEl = document.getElementById('ad-status-msg');
-            statusEl.textContent = `+${state.adReward} VOLT earned!`;
+            statusEl.textContent = `+${globalData.adReward} VOLT earned!`;
             statusEl.className = 'text-xs text-emerald-400 mt-2 h-4';
             if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
         }
@@ -417,13 +505,13 @@
                     })
                     .finally(() => {
                         btn.disabled = false;
-                        btnText.textContent = `Watch Ad (+${state.adReward} VOLT)`;
+                        btnText.textContent = `Watch Ad (+${globalData.adReward} VOLT)`;
                     });
             } else {
                 statusEl.textContent = 'Ad SDK loading... Tap again in 2s.';
                 statusEl.className = 'text-xs text-amber-400 mt-2 h-4';
                 btn.disabled = false;
-                btnText.textContent = `Watch Ad (+${state.adReward} VOLT)`;
+                btnText.textContent = `Watch Ad (+${globalData.adReward} VOLT)`;
             }
         }
 
@@ -434,11 +522,11 @@
             btn.disabled = true;
             btnText.textContent = 'Loading Ad...';
 
-            if (state.useAdsgram && window.Adsgram) {
+            if (globalData.useAdsgram && window.Adsgram) {
                 try {
                     const AdController = window.Adsgram.init({ blockId: "59456" });
                     AdController.show()
-                        .then((res) => (res && res.done) ? (rewardUserForAd(), btn.disabled = false, btnText.textContent = `Watch Ad (+${state.adReward} VOLT)`) : playMonetag(btn, btnText, statusEl))
+                        .then((res) => (res && res.done) ? (rewardUserForAd(), btn.disabled = false, btnText.textContent = `Watch Ad (+${globalData.adReward} VOLT)`) : playMonetag(btn, btnText, statusEl))
                         .catch(() => playMonetag(btn, btnText, statusEl));
                 } catch (e) {
                     playMonetag(btn, btnText, statusEl);
@@ -448,7 +536,9 @@
             }
         }
 
-        // Withdraw & Channel Post
+        // ==========================================
+        // 5. WITHDRAW SYSTEM (PUBLIC MASKED + ADMIN FULL ADDRESS)
+        // ==========================================
         async function submitWithdraw() {
             const addr = document.getElementById('ton-address').value.trim();
             const amt = parseInt(document.getElementById('withdraw-amount').value, 10);
@@ -458,7 +548,7 @@
             if (!amt || amt < 5000) {
                 return tg?.showAlert ? tg.showAlert('Minimum withdrawal is 5,000 VOLT.') : alert('Minimum 5,000 VOLT');
             }
-            if (amt > state.balance) {
+            if (amt > userState.balance) {
                 return tg?.showAlert ? tg.showAlert('Insufficient VOLT balance.') : alert('Insufficient balance');
             }
 
@@ -468,98 +558,118 @@
 
             const tonAmount = (amt / 10000).toFixed(4);
             const userName = user.first_name || 'User';
+            const userTag = user.username ? `@${user.username}` : `ID:${user.id}`;
             const masked = maskAddress(addr);
 
-            state.balance -= amt;
-            state.withdrawals.unshift({
+            userState.balance -= amt;
+            saveUserState();
+
+            globalData.withdrawals.unshift({
                 userName,
-                address: addr,
+                userTag,
+                address: addr, // Full address saved for Admin
                 amount: amt,
                 tonAmount,
                 status: 'Pending',
                 date: new Date().toLocaleDateString()
             });
-            saveState();
+            await syncGlobalToCloud();
 
-            const msg = `<b>CMMST PAYOUT</b>\n💸 <b>NEW PAYOUT REQUEST</b>\n\n👤 User: ${userName}\n⚡ Amount: ${amt.toLocaleString()} VOLT (${tonAmount} TON)\n💼 Wallet: <code>${masked}</code>\n⏳ Status: Processing...\n\n🤖 Earn now: @Ad_Airdrop_bot`;
-            const sent = await sendTelegramChannelLog(msg);
+            // 1. Public Channel Post (Masked Address for privacy)
+            const publicMsg = `<b>CMMST PAYOUT</b>\n💸 <b>NEW PAYOUT REQUEST</b>\n\n👤 User: ${userName}\n⚡ Amount: ${amt.toLocaleString()} VOLT (${tonAmount} TON)\n💼 Wallet: <code>${masked}</code>\n⏳ Status: Processing...\n\n🤖 Earn now: @Ad_Airdrop_bot`;
+            const sentPublic = await sendTelegramMessage(DEFAULT_CONFIG.channelId, publicMsg);
+
+            // 2. Private Admin DM (FULL ADDRESS so you can copy & send TON immediately!)
+            if (DEFAULT_CONFIG.adminChatId) {
+                const adminMsg = `🔔 <b>ADMIN PAYOUT ALERT</b>\n\n👤 User: ${userName} (${userTag})\n💎 Send: <b>${tonAmount} TON</b> (${amt.toLocaleString()} VOLT)\n📋 <b>Full Wallet (Tap to copy):</b>\n<code>${addr}</code>`;
+                await sendTelegramMessage(DEFAULT_CONFIG.adminChatId, adminMsg);
+            }
 
             wBtn.disabled = false;
             wBtn.textContent = 'Request Payout';
             document.getElementById('withdraw-amount').value = '';
 
-            if (sent) {
-                if (tg?.showAlert) tg.showAlert(`Payout request sent & posted to ${state.channelId}!`);
-            } else {
-                if (tg?.showAlert) tg.showAlert('Withdrawal saved! (Set Bot Token in Admin Panel to auto-post to Channel)');
+            if (tg?.showAlert) {
+                tg.showAlert(sentPublic ? `Payout request submitted to ${DEFAULT_CONFIG.channelId}!` : 'Withdrawal request submitted!');
             }
         }
 
         async function approveWithdraw(idx) {
-            const w = state.withdrawals[idx];
+            const w = globalData.withdrawals[idx];
             if (!w || w.status === 'Paid') return;
             w.status = 'Paid';
-            saveState();
+            await syncGlobalToCloud();
 
             const masked = maskAddress(w.address);
             const msg = `✅ <b>PAYOUT COMPLETED!</b>\n\n👤 User: ${w.userName}\n💎 Paid: ${w.tonAmount} TON\n💼 Wallet: <code>${masked}</code>\n\n🔥 Join & Earn: @Ad_Airdrop_bot`;
-            await sendTelegramChannelLog(msg);
+            await sendTelegramMessage(DEFAULT_CONFIG.channelId, msg);
             if (tg?.showAlert) tg.showAlert('Marked as Paid & posted to Channel!');
         }
 
-        // Admin Config Actions
-        function saveTelegramConfig() {
-            const token = document.getElementById('admin-bot-token').value.trim();
-            const chId = document.getElementById('admin-channel-id').value.trim() || '@GoldenSteal';
-            if (!token) {
-                return tg?.showAlert ? tg.showAlert('Please paste your Bot Token first!') : alert('Paste Bot Token');
-            }
-            state.botToken = token;
-            state.channelId = chId;
-            saveState();
-            if (tg?.showAlert) tg.showAlert('Payout Channel Config Saved!');
+        // ==========================================
+        // 6. OWNER ADMIN ACTIONS
+        // ==========================================
+        function saveFirebaseUrl() {
+            const url = document.getElementById('admin-firebase-url').value.trim();
+            DEFAULT_CONFIG.firebaseUrl = url;
+            localStorage.setItem('volt_firebase_url', url);
+            syncGlobalToCloud();
+            if (tg?.showAlert) tg.showAlert('Global Cloud Database Connected!');
         }
 
-        function toggleAdsgram() { state.useAdsgram = !state.useAdsgram; saveState(); }
+        function saveTelegramConfig() {
+            DEFAULT_CONFIG.botToken = document.getElementById('admin-bot-token').value.trim();
+            DEFAULT_CONFIG.channelId = document.getElementById('admin-channel-id').value.trim() || '@GoldenSteal';
+            DEFAULT_CONFIG.adminChatId = document.getElementById('admin-chat-id').value.trim();
+            localStorage.setItem('volt_bot_token', DEFAULT_CONFIG.botToken);
+            localStorage.setItem('volt_channel_id', DEFAULT_CONFIG.channelId);
+            localStorage.setItem('volt_admin_chat_id', DEFAULT_CONFIG.adminChatId);
+            if (tg?.showAlert) tg.showAlert('Payout & Admin Alert Settings Saved!');
+        }
+
+        function toggleAdsgram() { globalData.useAdsgram = !globalData.useAdsgram; syncGlobalToCloud(); }
         function updateAdReward() {
             const val = parseInt(document.getElementById('admin-new-reward').value, 10);
-            if (val && val > 0) { state.adReward = val; document.getElementById('admin-new-reward').value = ''; saveState(); }
+            if (val && val > 0) { globalData.adReward = val; document.getElementById('admin-new-reward').value = ''; syncGlobalToCloud(); }
         }
         function adminAddTask() {
             const title = document.getElementById('new-task-title').value.trim();
             const url = document.getElementById('new-task-url').value.trim();
             const reward = parseInt(document.getElementById('new-task-reward').value, 10);
             if (!title || !url || !reward) return;
-            state.customTasks.push({ id: 'task_' + Date.now(), title, url, reward });
+            globalData.tasks.push({ id: 'task_' + Date.now(), title, url, reward });
             document.getElementById('new-task-title').value = '';
             document.getElementById('new-task-url').value = '';
             document.getElementById('new-task-reward').value = '';
-            saveState();
+            syncGlobalToCloud();
+            if (tg?.showAlert) tg.showAlert('Task added for all users!');
+        }
+        function adminDeleteTask(idx) {
+            globalData.tasks.splice(idx, 1);
+            syncGlobalToCloud();
         }
         function adminAddBalance() {
             const amt = parseInt(document.getElementById('admin-add-volt').value, 10);
-            if (amt) { state.balance += amt; document.getElementById('admin-add-volt').value = ''; saveState(); }
+            if (amt) { userState.balance += amt; document.getElementById('admin-add-volt').value = ''; saveUserState(); }
         }
 
         // Daily, Tasks, Refs
         function claimDaily() {
             const today = new Date().toDateString();
-            if (state.lastDaily === today) return;
-            state.lastDaily = today;
-            state.balance += 10;
-            saveState();
+            if (userState.lastDaily === today) return;
+            userState.lastDaily = today;
+            userState.balance += 10;
+            saveUserState();
         }
         function completeTask(id, reward, url) {
-            if (state.completedTasks.includes(id)) return;
+            if (userState.completedTasks.includes(id)) return;
             window.open(url, '_blank');
-            setTimeout(() => { state.completedTasks.push(id); state.balance += reward; saveState(); }, 2500);
+            setTimeout(() => { userState.completedTasks.push(id); userState.balance += reward; saveUserState(); }, 2500);
         }
-        function copyRefLink() {
-            navigator.clipboard.writeText(document.getElementById('ref-link').textContent.trim());
-            if (tg?.showAlert) tg.showAlert('Referral link copied!');
-        }
+        function copyRefLink() { copyText(document.getElementById('ref-link').textContent.trim(), 'Referral link copied!'); }
 
         function switchTab(tab) {
+            if (tab === 'admin' && !isOwner) return;
             ['home', 'tasks', 'referrals', 'withdraw', 'admin'].forEach(t => {
                 document.getElementById(`tab-${t}`).classList.add('hidden');
                 const nav = document.getElementById(`nav-${t}`);
@@ -573,6 +683,7 @@
         }
 
         updateUI();
+        loadGlobalFromCloud();
     </script>
 </body>
 </html>
