@@ -49,8 +49,8 @@
                 <div id="user-username" class="text-xs text-gray-400">@user</div>
             </div>
         </div>
-        <div class="px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-mono text-gray-300">
-            ⚡ VOLT Live
+        <div id="sync-badge" class="px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-mono text-emerald-400">
+            ⚡ Cloud Live
         </div>
     </div>
 
@@ -110,7 +110,10 @@
 
         <!-- TAB 2: TASKS -->
         <div id="tab-tasks" class="hidden space-y-3">
-            <h2 class="font-bold text-lg">Earn More VOLT</h2>
+            <div class="flex items-center justify-between">
+                <h2 class="font-bold text-lg">Earn More VOLT</h2>
+                <button onclick="loadGlobalFromCloud()" class="text-xs text-yellow-400 underline">Refresh</button>
+            </div>
             <div id="tasks-list" class="space-y-3"></div>
         </div>
 
@@ -156,38 +159,22 @@
                 <h2 class="font-bold text-lg text-yellow-400 flex items-center gap-2">
                     <i data-lucide="crown" class="w-5 h-5"></i> Admin Control Panel
                 </h2>
-                <span class="text-[10px] px-2 py-1 rounded bg-yellow-500/20 text-yellow-300 font-mono">OWNER ONLY</span>
+                <span class="text-[10px] px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 font-mono">DB CONNECTED</span>
             </div>
 
-            <!-- Global Cloud Sync (Firebase Realtime DB URL) -->
-            <div class="volt-card rounded-xl p-4 space-y-2 border-blue-500/30">
-                <div class="font-bold text-sm text-blue-400 flex items-center gap-1.5">
-                    <i data-lucide="globe" class="w-4 h-4"></i> Global Cloud Database (Tasks & Withdraw Sync)
-                </div>
-                <div class="text-[11px] text-gray-400">
-                    Task အသစ်ထည့်တာတွေ User အားလုံးဆီ ပေါ်စေဖို့ Firebase Realtime DB URL ထည့်ပါ (ဥပမာ: https://your-app.firebaseio.com)။
-                </div>
-                <div class="flex gap-2">
-                    <input id="admin-firebase-url" type="text" placeholder="https://xxx-default-rtdb.firebaseio.com" class="flex-1 p-2.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white font-mono">
-                    <button onclick="saveFirebaseUrl()" class="px-3 py-2 rounded-lg bg-blue-500 text-white font-bold text-xs">
-                        Connect
-                    </button>
-                </div>
-            </div>
-
-            <!-- Payout Channel & Admin DM Config -->
+            <!-- Payout Channel & Admin DM Config (Synced to Cloud for All Users) -->
             <div class="volt-card rounded-xl p-4 space-y-3 border-emerald-500/30">
                 <div class="font-bold text-sm text-emerald-400 flex items-center gap-1.5">
                     <i data-lucide="send" class="w-4 h-4"></i> Payout Channel & Admin Alert Settings
                 </div>
                 <div class="text-[11px] text-gray-400">
-                    Withdraw နှိပ်ရင် Channel ထဲ Public Post တင်ပြီး၊ သင့် DM ဆီကို <b>Full TON Address</b> ပို့ပေးပါမယ်။
+                    Bot Token တစ်ခါ Save လိုက်တာနဲ့ ဘယ် User မဆို Withdraw နှိပ်တိုင်း Channel ထဲရော သင့် DM ဆီပါ အလိုအလျောက် စာပို့ပေးပါမယ်။
                 </div>
                 <input id="admin-bot-token" type="text" placeholder="Bot Token (123456:ABC-DEF...)" class="w-full p-2.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white font-mono">
                 <input id="admin-channel-id" type="text" value="@GoldenSteal" placeholder="Public Channel (@GoldenSteal)" class="w-full p-2.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white font-mono">
                 <input id="admin-chat-id" type="text" placeholder="Your Admin Telegram ID (e.g. 123456789)" class="w-full p-2.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white font-mono">
                 <button onclick="saveTelegramConfig()" class="w-full py-2.5 rounded-lg bg-emerald-400 text-black font-bold text-xs">
-                    Save Payout Settings
+                    Save Cloud Notification Config
                 </button>
             </div>
 
@@ -235,7 +222,10 @@
 
             <!-- Pending Withdrawals (With Full Copyable Address!) -->
             <div class="volt-card rounded-xl p-4 space-y-2">
-                <div class="font-bold text-sm text-white">Withdrawal Requests (Tap Address to Copy)</div>
+                <div class="flex items-center justify-between">
+                    <div class="font-bold text-sm text-white">Withdrawal Requests</div>
+                    <button onclick="loadGlobalFromCloud()" class="text-xs text-yellow-400 underline">Refresh</button>
+                </div>
                 <div id="admin-withdraw-list" class="text-xs text-gray-400 space-y-2">No pending requests.</div>
             </div>
         </div>
@@ -260,7 +250,6 @@
             <i data-lucide="wallet" class="w-5 h-5"></i>
             <span class="text-[10px] font-semibold">Withdraw</span>
         </button>
-        <!-- Hidden by default; only shown if user is Owner -->
         <button onclick="switchTab('admin')" id="nav-admin" class="hidden nav-item flex flex-col items-center gap-1 text-gray-400 p-2">
             <i data-lucide="crown" class="w-5 h-5"></i>
             <span class="text-[10px] font-semibold">Admin</span>
@@ -276,10 +265,11 @@
         }
 
         // ==========================================
-        // 1. OWNER SECURITY LOCK (ONLY YOU CAN SEE ADMIN)
+        // 1. HARDCODED FIREBASE REALTIME DB & OWNER LOCK
         // ==========================================
-        const OWNER_USERNAMES = ['dragonchou18']; // သင့် Telegram Username (စာလုံးအသေးဖြင့်)
-        const OWNER_IDS = []; // လိုအပ်ပါက သင့် Numeric Telegram ID ထည့်နိုင်သည်
+        const FIREBASE_DB_URL = "https://adpro-bot-default-rtdb.firebaseio.com";
+        const OWNER_USERNAMES = ['dragonchou18'];
+        const OWNER_IDS = [];
 
         const user = tg?.initDataUnsafe?.user || { id: 'demo_user', first_name: 'Kim', username: 'Dragonchou18' };
         const isOwner = OWNER_USERNAMES.includes((user.username || '').toLowerCase()) || OWNER_IDS.includes(Number(user.id));
@@ -287,17 +277,6 @@
         if (isOwner) {
             document.getElementById('nav-admin').classList.remove('hidden');
         }
-
-        // ==========================================
-        // 2. GLOBAL CONFIG & STATE
-        // ==========================================
-        // Default Global Config (Hardcode your Firebase URL & Bot Token here if you want instant global sync without typing in UI)
-        const DEFAULT_CONFIG = {
-            firebaseUrl: localStorage.getItem('volt_firebase_url') || '',
-            botToken: localStorage.getItem('volt_bot_token') || '',
-            channelId: localStorage.getItem('volt_channel_id') || '@GoldenSteal',
-            adminChatId: localStorage.getItem('volt_admin_chat_id') || (isOwner && user.id !== 'demo_user' ? String(user.id) : '')
-        };
 
         const DEFAULT_TASKS = [
             { id: 'tg_channel', title: 'Join Official Payout Channel', reward: 100, url: 'https://t.me/GoldenSteal' }
@@ -314,6 +293,9 @@
         let globalData = JSON.parse(localStorage.getItem('volt_global_cache')) || {
             adReward: 50,
             useAdsgram: false,
+            botToken: '',
+            channelId: '@GoldenSteal',
+            adminChatId: '',
             tasks: DEFAULT_TASKS,
             withdrawals: []
         };
@@ -326,35 +308,36 @@
         async function syncGlobalToCloud() {
             localStorage.setItem('volt_global_cache', JSON.stringify(globalData));
             updateUI();
-            if (DEFAULT_CONFIG.firebaseUrl) {
-                try {
-                    const cleanUrl = DEFAULT_CONFIG.firebaseUrl.replace(/\/$/, '');
-                    await fetch(`${cleanUrl}/volt_global.json`, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(globalData)
-                    });
-                } catch (e) {
-                    console.error('Cloud sync save error:', e);
-                }
+            try {
+                await fetch(`${FIREBASE_DB_URL}/volt_global.json`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(globalData)
+                });
+            } catch (e) {
+                console.error('Cloud sync save error:', e);
             }
         }
 
         async function loadGlobalFromCloud() {
-            if (!DEFAULT_CONFIG.firebaseUrl) return;
             try {
-                const cleanUrl = DEFAULT_CONFIG.firebaseUrl.replace(/\/$/, '');
-                const res = await fetch(`${cleanUrl}/volt_global.json`);
+                const res = await fetch(`${FIREBASE_DB_URL}/volt_global.json`);
                 const data = await res.json();
                 if (data) {
                     globalData = {
                         adReward: data.adReward || 50,
                         useAdsgram: !!data.useAdsgram,
-                        tasks: data.tasks || DEFAULT_TASKS,
-                        withdrawals: data.withdrawals || []
+                        botToken: data.botToken || '',
+                        channelId: data.channelId || '@GoldenSteal',
+                        adminChatId: data.adminChatId || '',
+                        tasks: Array.isArray(data.tasks) && data.tasks.length > 0 ? data.tasks : DEFAULT_TASKS,
+                        withdrawals: Array.isArray(data.withdrawals) ? data.withdrawals : []
                     };
                     localStorage.setItem('volt_global_cache', JSON.stringify(globalData));
                     updateUI();
+                } else if (isOwner) {
+                    // Initialize DB on first load
+                    await syncGlobalToCloud();
                 }
             } catch (e) {
                 console.error('Cloud sync load error:', e);
@@ -372,9 +355,9 @@
         }
 
         async function sendTelegramMessage(chatId, text) {
-            if (!DEFAULT_CONFIG.botToken || !chatId) return false;
+            if (!globalData.botToken || !chatId) return false;
             try {
-                const res = await fetch(`https://api.telegram.org/bot${DEFAULT_CONFIG.botToken}/sendMessage`, {
+                const res = await fetch(`https://api.telegram.org/bot${globalData.botToken}/sendMessage`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -393,7 +376,7 @@
         }
 
         // ==========================================
-        // 3. UI RENDERING
+        // 2. UI RENDERING
         // ==========================================
         function updateUI() {
             document.getElementById('user-name').textContent = user.first_name || 'VOLT User';
@@ -403,7 +386,6 @@
             document.getElementById('ref-link').textContent = `https://t.me/Ad_Airdrop_bot?start=${user.id}`;
             document.getElementById('watch-ad-text').textContent = `Watch Ad (+${globalData.adReward} VOLT)`;
 
-            // Daily status
             const today = new Date().toDateString();
             const dailyBtn = document.getElementById('daily-btn');
             if (userState.lastDaily === today) {
@@ -412,7 +394,7 @@
                 dailyBtn.className = 'px-4 py-2 rounded-lg bg-white/10 text-gray-400 font-bold text-xs';
             }
 
-            // Render Tasks for Users
+            // Global Tasks List
             const tasksList = document.getElementById('tasks-list');
             tasksList.innerHTML = '';
             (globalData.tasks || DEFAULT_TASKS).forEach(task => {
@@ -431,12 +413,15 @@
                 `;
             });
 
-            // Owner Admin Panel Render
+            // Owner Admin Panel
             if (isOwner) {
-                document.getElementById('admin-firebase-url').value = DEFAULT_CONFIG.firebaseUrl;
-                document.getElementById('admin-bot-token').value = DEFAULT_CONFIG.botToken;
-                document.getElementById('admin-channel-id').value = DEFAULT_CONFIG.channelId;
-                document.getElementById('admin-chat-id').value = DEFAULT_CONFIG.adminChatId;
+                if (globalData.botToken) document.getElementById('admin-bot-token').value = globalData.botToken;
+                document.getElementById('admin-channel-id').value = globalData.channelId || '@GoldenSteal';
+                if (globalData.adminChatId) {
+                    document.getElementById('admin-chat-id').value = globalData.adminChatId;
+                } else if (user.id !== 'demo_user') {
+                    document.getElementById('admin-chat-id').value = String(user.id);
+                }
 
                 const toggleBtn = document.getElementById('toggle-adsgram-btn');
                 if (globalData.useAdsgram) {
@@ -447,7 +432,6 @@
                     toggleBtn.className = 'px-3 py-1.5 rounded-lg bg-yellow-500/20 text-yellow-300 font-bold';
                 }
 
-                // Manage/Delete Tasks list in Admin
                 const adminTasksDiv = document.getElementById('admin-tasks-manage');
                 adminTasksDiv.innerHTML = (globalData.tasks || []).map((t, i) => `
                     <div class="flex items-center justify-between text-xs bg-black/30 p-2 rounded">
@@ -456,7 +440,6 @@
                     </div>
                 `).join('');
 
-                // Render Withdrawals with FULL ADDRESS & Copy button
                 const adminWList = document.getElementById('admin-withdraw-list');
                 if (globalData.withdrawals && globalData.withdrawals.length > 0) {
                     adminWList.innerHTML = globalData.withdrawals.map((w, idx) => `
@@ -482,7 +465,7 @@
         }
 
         // ==========================================
-        // 4. AD ENGINE (MONETAG DIRECT + OPTIONAL ADSGRAM)
+        // 3. AD ENGINE
         // ==========================================
         function rewardUserForAd() {
             userState.balance += globalData.adReward;
@@ -537,7 +520,7 @@
         }
 
         // ==========================================
-        // 5. WITHDRAW SYSTEM (PUBLIC MASKED + ADMIN FULL ADDRESS)
+        // 4. WITHDRAW SYSTEM (CLOUD SYNC + CHANNEL + ADMIN DM)
         // ==========================================
         async function submitWithdraw() {
             const addr = document.getElementById('ton-address').value.trim();
@@ -556,6 +539,8 @@
             wBtn.disabled = true;
             wBtn.textContent = 'Sending Request...';
 
+            await loadGlobalFromCloud();
+
             const tonAmount = (amt / 10000).toFixed(4);
             const userName = user.first_name || 'User';
             const userTag = user.username ? `@${user.username}` : `ID:${user.id}`;
@@ -567,7 +552,7 @@
             globalData.withdrawals.unshift({
                 userName,
                 userTag,
-                address: addr, // Full address saved for Admin
+                address: addr,
                 amount: amt,
                 tonAmount,
                 status: 'Pending',
@@ -575,14 +560,12 @@
             });
             await syncGlobalToCloud();
 
-            // 1. Public Channel Post (Masked Address for privacy)
             const publicMsg = `<b>CMMST PAYOUT</b>\n💸 <b>NEW PAYOUT REQUEST</b>\n\n👤 User: ${userName}\n⚡ Amount: ${amt.toLocaleString()} VOLT (${tonAmount} TON)\n💼 Wallet: <code>${masked}</code>\n⏳ Status: Processing...\n\n🤖 Earn now: @Ad_Airdrop_bot`;
-            const sentPublic = await sendTelegramMessage(DEFAULT_CONFIG.channelId, publicMsg);
+            const sentPublic = await sendTelegramMessage(globalData.channelId, publicMsg);
 
-            // 2. Private Admin DM (FULL ADDRESS so you can copy & send TON immediately!)
-            if (DEFAULT_CONFIG.adminChatId) {
+            if (globalData.adminChatId) {
                 const adminMsg = `🔔 <b>ADMIN PAYOUT ALERT</b>\n\n👤 User: ${userName} (${userTag})\n💎 Send: <b>${tonAmount} TON</b> (${amt.toLocaleString()} VOLT)\n📋 <b>Full Wallet (Tap to copy):</b>\n<code>${addr}</code>`;
-                await sendTelegramMessage(DEFAULT_CONFIG.adminChatId, adminMsg);
+                await sendTelegramMessage(globalData.adminChatId, adminMsg);
             }
 
             wBtn.disabled = false;
@@ -590,7 +573,7 @@
             document.getElementById('withdraw-amount').value = '';
 
             if (tg?.showAlert) {
-                tg.showAlert(sentPublic ? `Payout request submitted to ${DEFAULT_CONFIG.channelId}!` : 'Withdrawal request submitted!');
+                tg.showAlert(sentPublic ? `Payout request submitted to ${globalData.channelId}!` : 'Withdrawal request submitted!');
             }
         }
 
@@ -602,29 +585,19 @@
 
             const masked = maskAddress(w.address);
             const msg = `✅ <b>PAYOUT COMPLETED!</b>\n\n👤 User: ${w.userName}\n💎 Paid: ${w.tonAmount} TON\n💼 Wallet: <code>${masked}</code>\n\n🔥 Join & Earn: @Ad_Airdrop_bot`;
-            await sendTelegramMessage(DEFAULT_CONFIG.channelId, msg);
+            await sendTelegramMessage(globalData.channelId, msg);
             if (tg?.showAlert) tg.showAlert('Marked as Paid & posted to Channel!');
         }
 
         // ==========================================
-        // 6. OWNER ADMIN ACTIONS
+        // 5. OWNER ADMIN ACTIONS
         // ==========================================
-        function saveFirebaseUrl() {
-            const url = document.getElementById('admin-firebase-url').value.trim();
-            DEFAULT_CONFIG.firebaseUrl = url;
-            localStorage.setItem('volt_firebase_url', url);
-            syncGlobalToCloud();
-            if (tg?.showAlert) tg.showAlert('Global Cloud Database Connected!');
-        }
-
-        function saveTelegramConfig() {
-            DEFAULT_CONFIG.botToken = document.getElementById('admin-bot-token').value.trim();
-            DEFAULT_CONFIG.channelId = document.getElementById('admin-channel-id').value.trim() || '@GoldenSteal';
-            DEFAULT_CONFIG.adminChatId = document.getElementById('admin-chat-id').value.trim();
-            localStorage.setItem('volt_bot_token', DEFAULT_CONFIG.botToken);
-            localStorage.setItem('volt_channel_id', DEFAULT_CONFIG.channelId);
-            localStorage.setItem('volt_admin_chat_id', DEFAULT_CONFIG.adminChatId);
-            if (tg?.showAlert) tg.showAlert('Payout & Admin Alert Settings Saved!');
+        async function saveTelegramConfig() {
+            globalData.botToken = document.getElementById('admin-bot-token').value.trim();
+            globalData.channelId = document.getElementById('admin-channel-id').value.trim() || '@GoldenSteal';
+            globalData.adminChatId = document.getElementById('admin-chat-id').value.trim();
+            await syncGlobalToCloud();
+            if (tg?.showAlert) tg.showAlert('Saved to Cloud! All users now synced.');
         }
 
         function toggleAdsgram() { globalData.useAdsgram = !globalData.useAdsgram; syncGlobalToCloud(); }
@@ -632,7 +605,7 @@
             const val = parseInt(document.getElementById('admin-new-reward').value, 10);
             if (val && val > 0) { globalData.adReward = val; document.getElementById('admin-new-reward').value = ''; syncGlobalToCloud(); }
         }
-        function adminAddTask() {
+        async function adminAddTask() {
             const title = document.getElementById('new-task-title').value.trim();
             const url = document.getElementById('new-task-url').value.trim();
             const reward = parseInt(document.getElementById('new-task-reward').value, 10);
@@ -641,8 +614,8 @@
             document.getElementById('new-task-title').value = '';
             document.getElementById('new-task-url').value = '';
             document.getElementById('new-task-reward').value = '';
-            syncGlobalToCloud();
-            if (tg?.showAlert) tg.showAlert('Task added for all users!');
+            await syncGlobalToCloud();
+            if (tg?.showAlert) tg.showAlert('Task added globally for ALL users!');
         }
         function adminDeleteTask(idx) {
             globalData.tasks.splice(idx, 1);
@@ -680,6 +653,7 @@
             const activeNav = document.getElementById(`nav-${tab}`);
             activeNav.classList.remove('text-gray-400');
             activeNav.classList.add('text-yellow-400');
+            if (tab === 'tasks' || tab === 'admin') loadGlobalFromCloud();
         }
 
         updateUI();
