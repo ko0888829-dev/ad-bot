@@ -54,8 +54,8 @@
                 <div id="user-username" class="text-xs text-gray-400">@user</div>
             </div>
         </div>
-        <div class="px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-mono text-gray-300">
-            ⚡ Dual-Ad Active
+        <div id="wallet-badge" class="px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-mono text-gray-300">
+            ⚡ VOLT Live
         </div>
     </div>
 
@@ -118,24 +118,7 @@
         <!-- TAB 2: TASKS -->
         <div id="tab-tasks" class="hidden space-y-3">
             <h2 class="font-bold text-lg">Earn More VOLT</h2>
-            <div class="volt-card rounded-xl p-4 flex items-center justify-between">
-                <div>
-                    <div class="font-bold text-sm">Join Official Channel</div>
-                    <div class="text-xs text-yellow-400">+100 VOLT</div>
-                </div>
-                <button onclick="completeTask('tg_channel', 100, 'https://t.me/GoldenSteal')" id="task-tg_channel" class="px-4 py-2 rounded-lg bg-yellow-400 text-black font-bold text-xs">
-                    Start
-                </button>
-            </div>
-            <div class="volt-card rounded-xl p-4 flex items-center justify-between">
-                <div>
-                    <div class="font-bold text-sm">Share Bot with Friends</div>
-                    <div class="text-xs text-yellow-400">+150 VOLT</div>
-                </div>
-                <button onclick="shareReferral()" class="px-4 py-2 rounded-lg bg-yellow-400 text-black font-bold text-xs">
-                    Share
-                </button>
-            </div>
+            <div id="tasks-list" class="space-y-3"></div>
         </div>
 
         <!-- TAB 3: REFERRALS -->
@@ -172,11 +155,81 @@
                     Request Payout
                 </button>
             </div>
+            <div id="withdraw-history" class="space-y-2"></div>
+        </div>
+
+        <!-- TAB 5: ADMIN PANEL -->
+        <div id="tab-admin" class="hidden space-y-4">
+            <div class="flex items-center justify-between">
+                <h2 class="font-bold text-lg text-yellow-400 flex items-center gap-2">
+                    <i data-lucide="crown" class="w-5 h-5"></i> Admin Control Panel
+                </h2>
+                <span class="text-[10px] px-2 py-1 rounded bg-yellow-500/20 text-yellow-300 font-mono">OWNER</span>
+            </div>
+
+            <!-- Stats Overview -->
+            <div class="grid grid-cols-2 gap-3">
+                <div class="volt-card rounded-xl p-3">
+                    <div class="text-[11px] text-gray-400">Ads Watched</div>
+                    <div id="admin-ads-count" class="text-xl font-black text-white mt-1">0</div>
+                </div>
+                <div class="volt-card rounded-xl p-3">
+                    <div class="text-[11px] text-gray-400">Ad Reward</div>
+                    <div id="admin-reward-display" class="text-xl font-black text-yellow-400 mt-1">50 VOLT</div>
+                </div>
+            </div>
+
+            <!-- Ad Network Switch & Reward Config -->
+            <div class="volt-card rounded-xl p-4 space-y-3">
+                <div class="font-bold text-sm text-white">Ad Network & Reward Settings</div>
+                <div class="flex items-center justify-between text-xs">
+                    <span class="text-gray-300">Primary Adsgram (59456)</span>
+                    <button id="toggle-adsgram-btn" onclick="toggleAdsgram()" class="px-3 py-1.5 rounded-lg bg-white/10 text-gray-300 font-bold">
+                        OFF (Using Monetag)
+                    </button>
+                </div>
+                <div class="flex gap-2">
+                    <input id="admin-new-reward" type="number" placeholder="Reward per ad (e.g. 50)" class="flex-1 p-2.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white">
+                    <button onclick="updateAdReward()" class="px-4 py-2.5 rounded-lg bg-yellow-400 text-black font-bold text-xs">
+                        Save
+                    </button>
+                </div>
+            </div>
+
+            <!-- Add Custom Sponsor Task -->
+            <div class="volt-card rounded-xl p-4 space-y-3">
+                <div class="font-bold text-sm text-white">Add New Sponsor Task</div>
+                <input id="new-task-title" type="text" placeholder="Task Title (e.g. Join VIP Channel)" class="w-full p-2.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white">
+                <input id="new-task-url" type="text" placeholder="Link (https://t.me/...)" class="w-full p-2.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white">
+                <div class="flex gap-2">
+                    <input id="new-task-reward" type="number" placeholder="Reward VOLT (e.g. 100)" class="flex-1 p-2.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white">
+                    <button onclick="adminAddTask()" class="px-4 py-2.5 rounded-lg bg-emerald-400 text-black font-bold text-xs">
+                        + Add Task
+                    </button>
+                </div>
+            </div>
+
+            <!-- Quick Balance Adjust (Testing) -->
+            <div class="volt-card rounded-xl p-4 space-y-3">
+                <div class="font-bold text-sm text-white">Test / Adjust My VOLT Balance</div>
+                <div class="flex gap-2">
+                    <input id="admin-add-volt" type="number" placeholder="Amount (e.g. 5000)" class="flex-1 p-2.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white">
+                    <button onclick="adminAddBalance()" class="px-4 py-2.5 rounded-lg bg-yellow-400 text-black font-bold text-xs">
+                        + Add VOLT
+                    </button>
+                </div>
+            </div>
+
+            <!-- Pending Withdrawals -->
+            <div class="volt-card rounded-xl p-4 space-y-2">
+                <div class="font-bold text-sm text-white">Withdrawal Requests</div>
+                <div id="admin-withdraw-list" class="text-xs text-gray-400">No pending requests.</div>
+            </div>
         </div>
 
     </div>
 
-    <!-- Bottom Navigation -->
+    <!-- Bottom Navigation (With Admin Tab) -->
     <div class="fixed bottom-0 left-0 right-0 bg-[#0f1117]/95 backdrop-blur border-t border-white/10 px-2 py-2 flex justify-around items-center z-50">
         <button onclick="switchTab('home')" id="nav-home" class="nav-item flex flex-col items-center gap-1 text-yellow-400 p-2">
             <i data-lucide="home" class="w-5 h-5"></i>
@@ -194,10 +247,13 @@
             <i data-lucide="wallet" class="w-5 h-5"></i>
             <span class="text-[10px] font-semibold">Withdraw</span>
         </button>
+        <button onclick="switchTab('admin')" id="nav-admin" class="nav-item flex flex-col items-center gap-1 text-gray-400 p-2">
+            <i data-lucide="crown" class="w-5 h-5"></i>
+            <span class="text-[10px] font-semibold">Admin</span>
+        </button>
     </div>
 
     <script>
-        // Initialize Icons & Telegram WebApp
         lucide.createIcons();
         const tg = window.Telegram?.WebApp;
         if (tg) {
@@ -205,14 +261,22 @@
             tg.expand();
         }
 
-        // User State (LocalStorage Persistence)
-        const user = tg?.initDataUnsafe?.user || { id: 'demo_user', first_name: 'VOLT User', username: 'volt_player' };
-        const STORAGE_KEY = `volt_data_${user.id}`;
+        const user = tg?.initDataUnsafe?.user || { id: 'demo_user', first_name: 'Kim', username: 'Dragonchou18' };
+        const STORAGE_KEY = `volt_v2_${user.id}`;
+
+        const defaultTasks = [
+            { id: 'tg_channel', title: 'Join Official Payout Channel', reward: 100, url: 'https://t.me/GoldenSteal' }
+        ];
+
         let state = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {
             balance: 0,
             lastDaily: null,
             completedTasks: [],
-            adsWatched: 0
+            adsWatched: 0,
+            adReward: 50,
+            useAdsgram: false, // False while Adsgram is in moderation (prevents AdsgramError popup!)
+            customTasks: defaultTasks,
+            withdrawals: []
         };
 
         function saveState() {
@@ -226,7 +290,21 @@
             document.getElementById('user-avatar').textContent = (user.first_name || 'V')[0].toUpperCase();
             document.getElementById('volt-balance').textContent = state.balance.toLocaleString();
             document.getElementById('ref-link').textContent = `https://t.me/Ad_Airdrop_bot?start=${user.id}`;
+            document.getElementById('watch-ad-text').textContent = `Watch Ad (+${state.adReward} VOLT)`;
 
+            // Admin stats
+            document.getElementById('admin-ads-count').textContent = state.adsWatched;
+            document.getElementById('admin-reward-display').textContent = `${state.adReward} VOLT`;
+            const toggleBtn = document.getElementById('toggle-adsgram-btn');
+            if (state.useAdsgram) {
+                toggleBtn.textContent = 'ON (Adsgram + Monetag)';
+                toggleBtn.className = 'px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-300 font-bold';
+            } else {
+                toggleBtn.textContent = 'OFF (Monetag Direct)';
+                toggleBtn.className = 'px-3 py-1.5 rounded-lg bg-yellow-500/20 text-yellow-300 font-bold';
+            }
+
+            // Daily status
             const today = new Date().toDateString();
             const dailyBtn = document.getElementById('daily-btn');
             if (state.lastDaily === today) {
@@ -235,41 +313,55 @@
                 dailyBtn.className = 'px-4 py-2 rounded-lg bg-white/10 text-gray-400 font-bold text-xs';
             }
 
-            state.completedTasks.forEach(taskId => {
-                const btn = document.getElementById(`task-${taskId}`);
-                if (btn) {
-                    btn.textContent = 'Done';
-                    btn.disabled = true;
-                    btn.className = 'px-4 py-2 rounded-lg bg-white/10 text-gray-400 font-bold text-xs';
-                }
+            // Render Tasks
+            const tasksList = document.getElementById('tasks-list');
+            tasksList.innerHTML = '';
+            (state.customTasks || defaultTasks).forEach(task => {
+                const isDone = state.completedTasks.includes(task.id);
+                tasksList.innerHTML += `
+                    <div class="volt-card rounded-xl p-4 flex items-center justify-between">
+                        <div>
+                            <div class="font-bold text-sm">${task.title}</div>
+                            <div class="text-xs text-yellow-400">+${task.reward} VOLT</div>
+                        </div>
+                        <button onclick="completeTask('${task.id}', ${task.reward}, '${task.url}')" ${isDone ? 'disabled' : ''}
+                            class="px-4 py-2 rounded-lg font-bold text-xs ${isDone ? 'bg-white/10 text-gray-400' : 'bg-yellow-400 text-black'}">
+                            ${isDone ? 'Done' : 'Start'}
+                        </button>
+                    </div>
+                `;
             });
-        }
 
-        // ==========================================
-        // DUAL AD ENGINE: ADSGRAM (59456) -> MONETAG (12250655)
-        // ==========================================
-        const AD_REWARD = 50;
-        let AdController = null;
-        if (window.Adsgram) {
-            try {
-                AdController = window.Adsgram.init({ blockId: "59456" });
-            } catch (e) {
-                console.warn("Adsgram init skipped:", e);
+            // Render Admin Withdrawals
+            const adminWList = document.getElementById('admin-withdraw-list');
+            if (state.withdrawals && state.withdrawals.length > 0) {
+                adminWList.innerHTML = state.withdrawals.map((w, idx) => `
+                    <div class="p-2.5 rounded-lg bg-black/40 border border-white/10 flex items-center justify-between">
+                        <div>
+                            <div class="text-white font-bold">${w.amount} VOLT (${(w.amount / 10000).toFixed(2)} TON)</div>
+                            <div class="text-[10px] text-gray-400 font-mono">${w.address.slice(0, 12)}... • ${w.status}</div>
+                        </div>
+                        ${w.status === 'Pending' ? `<button onclick="approveWithdraw(${idx})" class="px-2.5 py-1 rounded bg-emerald-400 text-black font-bold text-[10px]">Mark Paid</button>` : '<span class="text-emerald-400 text-[10px] font-bold">Paid</span>'}
+                    </div>
+                `).join('');
             }
         }
 
+        // ==========================================
+        // AD ENGINE (NO POPUP ERROR!)
+        // ==========================================
         function rewardUserForAd(networkName) {
-            state.balance += AD_REWARD;
+            state.balance += state.adReward;
             state.adsWatched += 1;
             saveState();
             const statusEl = document.getElementById('ad-status-msg');
-            statusEl.textContent = `+${AD_REWARD} VOLT earned via ${networkName}!`;
+            statusEl.textContent = `+${state.adReward} VOLT earned!`;
             statusEl.className = 'text-xs text-emerald-400 mt-2 h-4';
             if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
         }
 
-        function showMonetagFallback(btn, btnText, statusEl) {
-            statusEl.textContent = 'Loading backup ad (Monetag)...';
+        function playMonetag(btn, btnText, statusEl) {
+            statusEl.textContent = 'Loading video ad...';
             if (typeof window.show_12250655 === 'function') {
                 window.show_12250655()
                     .then(() => {
@@ -277,18 +369,18 @@
                     })
                     .catch((err) => {
                         console.error('Monetag error:', err);
-                        statusEl.textContent = 'No ads available right now. Try again in a moment.';
+                        statusEl.textContent = 'Ad closed or unavailable. Please try again.';
                         statusEl.className = 'text-xs text-amber-400 mt-2 h-4';
                     })
                     .finally(() => {
                         btn.disabled = false;
-                        btnText.textContent = `Watch Ad (+${AD_REWARD} VOLT)`;
+                        btnText.textContent = `Watch Ad (+${state.adReward} VOLT)`;
                     });
             } else {
-                statusEl.textContent = 'Ad network initializing. Please wait 3 seconds & retry.';
+                statusEl.textContent = 'Ad SDK loading... Please tap again in 2 seconds.';
                 statusEl.className = 'text-xs text-amber-400 mt-2 h-4';
                 btn.disabled = false;
-                btnText.textContent = `Watch Ad (+${AD_REWARD} VOLT)`;
+                btnText.textContent = `Watch Ad (+${state.adReward} VOLT)`;
             }
         }
 
@@ -299,34 +391,76 @@
 
             btn.disabled = true;
             btnText.textContent = 'Loading Ad...';
-            statusEl.textContent = 'Checking primary ad network...';
             statusEl.className = 'text-xs text-gray-400 mt-2 h-4';
 
-            // 1. Try Adsgram First
-            if (AdController) {
-                AdController.show()
-                    .then((result) => {
-                        if (result && result.done) {
-                            rewardUserForAd('Adsgram');
-                            btn.disabled = false;
-                            btnText.textContent = `Watch Ad (+${AD_REWARD} VOLT)`;
-                        } else {
-                            // User closed early or incomplete -> fallback to Monetag
-                            showMonetagFallback(btn, btnText, statusEl);
-                        }
-                    })
-                    .catch((err) => {
-                        // Adsgram in moderation or no fill -> automatically switch to Monetag
-                        console.log('Adsgram unavailable, switching to Monetag:', err);
-                        showMonetagFallback(btn, btnText, statusEl);
-                    });
+            // Only call Adsgram if turned ON in Admin Panel (after Adsgram approves Block 59456)
+            if (state.useAdsgram && window.Adsgram) {
+                try {
+                    const AdController = window.Adsgram.init({ blockId: "59456" });
+                    AdController.show()
+                        .then((result) => {
+                            if (result && result.done) {
+                                rewardUserForAd('Adsgram');
+                                btn.disabled = false;
+                                btnText.textContent = `Watch Ad (+${state.adReward} VOLT)`;
+                            } else {
+                                playMonetag(btn, btnText, statusEl);
+                            }
+                        })
+                        .catch(() => playMonetag(btn, btnText, statusEl));
+                } catch (e) {
+                    playMonetag(btn, btnText, statusEl);
+                }
             } else {
-                // Directly use Monetag if Adsgram SDK failed to load
-                showMonetagFallback(btn, btnText, statusEl);
+                // Direct Monetag (Clean, zero AdsgramError popup!)
+                playMonetag(btn, btnText, statusEl);
             }
         }
 
-        // Daily & Tasks
+        // Admin Controls
+        function toggleAdsgram() {
+            state.useAdsgram = !state.useAdsgram;
+            saveState();
+        }
+
+        function updateAdReward() {
+            const val = parseInt(document.getElementById('admin-new-reward').value, 10);
+            if (val && val > 0) {
+                state.adReward = val;
+                document.getElementById('admin-new-reward').value = '';
+                saveState();
+                if (tg?.showAlert) tg.showAlert(`Ad reward updated to ${val} VOLT!`);
+            }
+        }
+
+        function adminAddTask() {
+            const title = document.getElementById('new-task-title').value.trim();
+            const url = document.getElementById('new-task-url').value.trim();
+            const reward = parseInt(document.getElementById('new-task-reward').value, 10);
+            if (!title || !url || !reward) return;
+            state.customTasks.push({ id: 'task_' + Date.now(), title, url, reward });
+            document.getElementById('new-task-title').value = '';
+            document.getElementById('new-task-url').value = '';
+            document.getElementById('new-task-reward').value = '';
+            saveState();
+            if (tg?.showAlert) tg.showAlert('New task added!');
+        }
+
+        function adminAddBalance() {
+            const amt = parseInt(document.getElementById('admin-add-volt').value, 10);
+            if (amt) {
+                state.balance += amt;
+                document.getElementById('admin-add-volt').value = '';
+                saveState();
+            }
+        }
+
+        function approveWithdraw(idx) {
+            state.withdrawals[idx].status = 'Paid';
+            saveState();
+        }
+
+        // User Actions
         function claimDaily() {
             const today = new Date().toDateString();
             if (state.lastDaily === today) return;
@@ -352,12 +486,6 @@
             if (tg?.showAlert) tg.showAlert('Referral link copied!');
         }
 
-        function shareReferral() {
-            const link = encodeURIComponent(`https://t.me/Ad_Airdrop_bot?start=${user.id}`);
-            const text = encodeURIComponent('⚡ Watch ads & earn real TON with VOLT!');
-            window.open(`https://t.me/share/url?url=${link}&text=${text}`, '_blank');
-        }
-
         function submitWithdraw() {
             const addr = document.getElementById('ton-address').value.trim();
             const amt = parseInt(document.getElementById('withdraw-amount').value, 10);
@@ -371,13 +499,13 @@
                 return tg?.showAlert ? tg.showAlert('Insufficient VOLT balance.') : alert('Insufficient balance');
             }
             state.balance -= amt;
+            state.withdrawals.unshift({ address: addr, amount: amt, status: 'Pending', date: new Date().toLocaleDateString() });
             saveState();
             if (tg?.showAlert) tg.showAlert(`Withdrawal request for ${amt} VOLT submitted!`);
         }
 
-        // Navigation
         function switchTab(tab) {
-            ['home', 'tasks', 'referrals', 'withdraw'].forEach(t => {
+            ['home', 'tasks', 'referrals', 'withdraw', 'admin'].forEach(t => {
                 document.getElementById(`tab-${t}`).classList.add('hidden');
                 const nav = document.getElementById(`nav-${t}`);
                 nav.classList.remove('text-yellow-400');
