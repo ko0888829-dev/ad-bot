@@ -10,6 +10,8 @@
     <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
     <!-- Monetag SDK -->
     <script src='//libtl.com/sdk.js' data-zone='12250655' data-sdk='show_12250655'></script>
+    <!-- Adcash AutoTag Library -->
+    <script id="aclib" type="text/javascript" src="//acscdn.com/script/aclib.js"></script>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons -->
@@ -2123,6 +2125,15 @@
                 }
             }
         })();
+    </script>
+
+    <!-- Adcash AutoTag (Zone: 1ypujqei0r) -->
+    <script type="text/javascript">
+        if (window.aclib && typeof aclib.runAutoTag === 'function') {
+            aclib.runAutoTag({
+                zoneId: '1ypujqei0r',
+            });
+        }
     </script>
 </body>
 </html>
