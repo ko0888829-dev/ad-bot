@@ -308,14 +308,18 @@
                 <i data-lucide="users" class="w-10 h-10 text-yellow-400 mx-auto"></i>
                 <h2 class="font-bold text-lg">Invite Friends & Earn</h2>
                 <p class="text-xs text-gray-400">Get <span class="text-yellow-400 font-bold">+50 VOLT</span> when your invited friend passes Human Check & watches 2 ads!</p>
-                <div class="grid grid-cols-2 gap-2 text-center my-2">
-                    <div class="p-2.5 rounded-lg bg-black/40 border border-white/10">
-                        <div class="text-[10px] text-gray-400">Verified Friends</div>
-                        <div id="ref-count" class="text-lg font-black text-white">0</div>
+                <div class="grid grid-cols-3 gap-2 text-center my-2">
+                    <div class="p-2.5 rounded-lg bg-black/40 border border-emerald-500/20">
+                        <div class="text-[10px] text-emerald-400">Active Friends</div>
+                        <div id="ref-count" class="text-lg font-black text-emerald-400">0</div>
+                    </div>
+                    <div class="p-2.5 rounded-lg bg-black/40 border border-amber-500/20">
+                        <div class="text-[10px] text-amber-400">Pending</div>
+                        <div id="ref-pending-count" class="text-lg font-black text-amber-400">0</div>
                     </div>
                     <div class="p-2.5 rounded-lg bg-black/40 border border-white/10">
                         <div class="text-[10px] text-gray-400">Ref Earnings</div>
-                        <div id="ref-earned" class="text-lg font-black text-yellow-400">0 VOLT</div>
+                        <div id="ref-earned" class="text-base font-black text-yellow-400">0 VOLT</div>
                     </div>
                 </div>
                 <div class="p-3 rounded-lg bg-black/40 border border-white/10 text-xs font-mono text-gray-300 break-all" id="ref-link">
@@ -324,6 +328,33 @@
                 <button onclick="copyRefLink()" class="volt-btn w-full py-3 rounded-xl font-bold text-sm">
                     Copy Referral Link
                 </button>
+            </div>
+
+            <!-- INVITED FRIENDS LIST (ACTIVE VS PENDING) -->
+            <div class="volt-card rounded-2xl p-4 space-y-3">
+                <div class="flex items-center justify-between">
+                    <span class="font-bold text-sm text-white flex items-center gap-1.5">
+                        <i data-lucide="user-check" class="w-4 h-4 text-yellow-400"></i> Invited Friends List
+                    </span>
+                    <button onclick="loadMyReferralsList()" class="text-xs text-yellow-400 underline">Refresh</button>
+                </div>
+
+                <!-- Filter Buttons -->
+                <div class="grid grid-cols-3 gap-1.5 bg-black/50 p-1 rounded-xl border border-white/10">
+                    <button onclick="setRefFilter('all')" id="rfilter-all" class="py-1.5 rounded-lg text-xs font-bold bg-yellow-400 text-black transition-all">
+                        All
+                    </button>
+                    <button onclick="setRefFilter('active')" id="rfilter-active" class="py-1.5 rounded-lg text-xs font-bold text-gray-400 transition-all">
+                        ✔ Active
+                    </button>
+                    <button onclick="setRefFilter('pending')" id="rfilter-pending" class="py-1.5 rounded-lg text-xs font-bold text-gray-400 transition-all">
+                        ⏳ Pending
+                    </button>
+                </div>
+
+                <div id="my-referrals-list" class="space-y-2 max-h-72 overflow-y-auto">
+                    <div class="text-xs text-gray-500 text-center py-4">Loading invited friends...</div>
+                </div>
             </div>
         </div>
 
@@ -528,7 +559,6 @@
             document.getElementById('nav-admin').classList.remove('hidden');
         }
 
-        // Generate Device Fingerprint & Model Info
         function getDeviceInfo() {
             const ua = navigator.userAgent || '';
             let model = 'Mobile Device';
@@ -615,6 +645,8 @@
         let taskStats = {};
         let allWithdrawals = [];
         let allUsersMap = {};
+        let myInvitedFriends = [];
+        let refFilterMode = 'all';
         let openedTasks = {};
         let isAdPlaying = false;
         let currentWheelRotation = 0;
@@ -762,6 +794,97 @@
             } catch (e) { console.error(e); }
         }
 
+        // Load invited friends for current user (both Active & Pending)
+        async function loadMyReferralsList() {
+            if (!tgUser?.id) return;
+            try {
+                const res = await fetch(`${FIREBASE_DB_URL}/users.json`);
+                const data = await res.json();
+                if (data && typeof data === 'object') {
+                    const myIdStr = String(user.id);
+                    const list = [];
+                    Object.entries(data).forEach(([uid, u]) => {
+                        if (u && String(u.referredBy || '') === myIdStr) {
+                            const isActive = Boolean(u.refRewardCredited) || (Boolean(u.isHumanVerified) && Number(u.adsWatched || 0) >= 2);
+                            list.push({
+                                uid,
+                                name: u.name || 'User',
+                                username: u.username || '',
+                                isHumanVerified: !!u.isHumanVerified,
+                                adsWatched: Number(u.adsWatched || 0),
+                                isActive,
+                                lastActive: Number(u.lastActive || 0)
+                            });
+                        }
+                    });
+                    list.sort((a, b) => (b.lastActive || 0) - (a.lastActive || 0));
+                    myInvitedFriends = list;
+                } else {
+                    myInvitedFriends = [];
+                }
+                renderMyReferralsList();
+            } catch (e) { console.error(e); }
+        }
+
+        function setRefFilter(mode) {
+            refFilterMode = mode;
+            ['all', 'active', 'pending'].forEach(m => {
+                const btn = document.getElementById(`rfilter-${m}`);
+                btn.className = (m === mode)
+                    ? 'py-1.5 rounded-lg text-xs font-bold bg-yellow-400 text-black transition-all'
+                    : 'py-1.5 rounded-lg text-xs font-bold text-gray-400 transition-all';
+            });
+            renderMyReferralsList();
+        }
+
+        function renderMyReferralsList() {
+            const activeList = myInvitedFriends.filter(f => f.isActive);
+            const pendingList = myInvitedFriends.filter(f => !f.isActive);
+
+            document.getElementById('ref-count').textContent = Math.max(userState.refCount || 0, activeList.length);
+            document.getElementById('ref-pending-count').textContent = pendingList.length;
+
+            let filtered = myInvitedFriends;
+            if (refFilterMode === 'active') filtered = activeList;
+            if (refFilterMode === 'pending') filtered = pendingList;
+
+            const container = document.getElementById('my-referrals-list');
+            if (filtered.length === 0) {
+                const emptyText = refFilterMode === 'active'
+                    ? 'No active friends yet. Share your link to earn +50 VOLT!'
+                    : (refFilterMode === 'pending'
+                        ? 'No pending friends right now.'
+                        : 'No invited friends yet. Copy your referral link above!');
+                container.innerHTML = `<div class="text-xs text-gray-500 text-center py-4">${emptyText}</div>`;
+                return;
+            }
+
+            container.innerHTML = filtered.map(f => {
+                const initial = (f.name || 'U')[0].toUpperCase();
+                const adsProgress = Math.min(f.adsWatched, 2);
+                const statusBadge = f.isActive
+                    ? `<span class="px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold">✔ Active (+50 VOLT)</span>`
+                    : `<span class="px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 text-[10px] font-bold">⏳ Pending (${adsProgress}/2 Ads)</span>`;
+
+                return `
+                    <div class="p-2.5 rounded-xl bg-black/40 border ${f.isActive ? 'border-emerald-500/20' : 'border-white/5'} flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2.5 min-w-0">
+                            <div class="w-8 h-8 rounded-full ${f.isActive ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/10 text-gray-300'} flex items-center justify-center font-bold text-xs shrink-0">
+                                ${initial}
+                            </div>
+                            <div class="min-w-0">
+                                <div class="font-bold text-xs text-white truncate">${f.name}</div>
+                                <div class="text-[10px] text-gray-400 truncate">${f.username ? `@${f.username}` : `ID: ${f.uid}`}</div>
+                            </div>
+                        </div>
+                        <div class="shrink-0">
+                            ${statusBadge}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
         async function saveConfigToCloud() {
             if (!isOwner) return;
             localStorage.setItem('volt_cfg_cache', JSON.stringify(globalConfig));
@@ -833,6 +956,7 @@
             await loadTaskStatsFromCloud();
             await loadUserFromCloud();
             await loadPromosFromCloud();
+            await loadMyReferralsList();
             if (isOwner) {
                 await loadAllUsersAnalytics();
                 await loadWithdrawalsFromCloud();
@@ -1318,7 +1442,7 @@
         }
 
         // ==========================================
-        // 6. REFERRAL SYSTEM (ANTI-FAKE + DEVICE/IP CHECK)
+        // 6. REFERRAL SYSTEM (ONLY ACTIVE REF GETS +50 VOLT)
         // ==========================================
         async function processReferralOnStart() {
             const urlParams = new URLSearchParams(window.location.search);
@@ -1544,9 +1668,10 @@
             document.getElementById('user-avatar').textContent = (user.first_name || 'V')[0].toUpperCase();
             document.getElementById('volt-balance').textContent = userState.balance.toLocaleString();
             document.getElementById('ref-link').textContent = `https://t.me/Ad_Airdrop_bot/app?startapp=${user.id}`;
-            document.getElementById('ref-count').textContent = userState.refCount || 0;
             document.getElementById('ref-earned').textContent = `${(userState.refEarned || 0).toLocaleString()} VOLT`;
             document.getElementById('watch-ad-text').textContent = `Watch Ad (+${globalConfig.adReward} VOLT)`;
+
+            renderMyReferralsList();
 
             const badgeEl = document.getElementById('sync-badge');
             if (isHumanCheckPassedToday()) {
@@ -1628,7 +1753,6 @@
             });
 
             if (isOwner) {
-                // Render Live Users & IP/Device Analytics
                 const userEntries = Object.entries(allUsersMap || {});
                 const { ipMap, devMap } = getDuplicateCounts();
                 const now = Date.now();
@@ -1638,7 +1762,7 @@
                 userEntries.sort((a, b) => (b[1].lastActive || 0) - (a[1].lastActive || 0));
 
                 const usersHtml = userEntries.map(([uid, u]) => {
-                    const isOnline = u.lastActive && (now - u.lastActive) < 120000; // active within 2 mins
+                    const isOnline = u.lastActive && (now - u.lastActive) < 120000;
                     if (isOnline) onlineCount++;
                     const ipDup = (u.ip && ipMap[u.ip]) ? ipMap[u.ip] : 1;
                     const devDup = (u.deviceId && devMap[u.deviceId]) ? devMap[u.deviceId] : 1;
@@ -1992,7 +2116,7 @@
             await syncAllFromCloud();
             await processReferralOnStart();
             if (tgUser?.id) {
-                await saveUserToCloud(); // Log IP & Device on entry
+                await saveUserToCloud();
                 if (!isHumanCheckPassedToday()) {
                     triggerHumanVerification();
                 }
