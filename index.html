@@ -309,7 +309,7 @@
             <div class="volt-card rounded-2xl p-5 text-center space-y-3">
                 <i data-lucide="users" class="w-10 h-10 text-yellow-400 mx-auto"></i>
                 <h2 class="font-bold text-lg">Invite Friends & Earn</h2>
-                <p class="text-xs text-gray-400">Get <span class="text-yellow-400 font-bold">+50 VOLT</span> when your invited friend passes Human Check & watches 2 ads!</p>
+                <p class="text-xs text-gray-400">Get <span class="text-yellow-400 font-bold">+250 VOLT</span> when your invited friend passes Human Check & watches 2 ads!</p>
                 <div class="grid grid-cols-3 gap-2 text-center my-2">
                     <div class="p-2.5 rounded-lg bg-black/40 border border-emerald-500/20">
                         <div class="text-[10px] text-emerald-400">Active Friends</div>
@@ -546,7 +546,7 @@
         const PROMO_CHANNEL = "@DargonGolden";
         const OWNER_IDS = [5330848428];
         const ADSGRAM_BLOCK_ID = "59679";
-        const REF_REWARD = 50;
+        const REF_REWARD = 250;
         const DAILY_REWARD = 10;
         const MIN_AD_SECONDS = 12;
 
@@ -854,7 +854,7 @@
             const container = document.getElementById('my-referrals-list');
             if (filtered.length === 0) {
                 const emptyText = refFilterMode === 'active'
-                    ? 'No active friends yet. Share your link to earn +50 VOLT!'
+                    ? 'No active friends yet. Share your link to earn +250 VOLT!'
                     : (refFilterMode === 'pending'
                         ? 'No pending friends right now.'
                         : 'No invited friends yet. Copy your referral link above!');
@@ -866,7 +866,7 @@
                 const initial = (f.name || 'U')[0].toUpperCase();
                 const adsProgress = Math.min(f.adsWatched, 2);
                 const statusBadge = f.isActive
-                    ? `<span class="px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold">✔ Active (+50 VOLT)</span>`
+                    ? `<span class="px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold">✔ Active (+250 VOLT)</span>`
                     : `<span class="px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 text-[10px] font-bold">⏳ Pending (${adsProgress}/2 Ads)</span>`;
 
                 return `
@@ -1445,7 +1445,7 @@
         }
 
         // ==========================================
-        // 6. REFERRAL SYSTEM (ONLY ACTIVE REF GETS +50 VOLT)
+        // 6. REFERRAL SYSTEM (ONLY ACTIVE REF GETS +250 VOLT)
         // ==========================================
         async function processReferralOnStart() {
             const urlParams = new URLSearchParams(window.location.search);
