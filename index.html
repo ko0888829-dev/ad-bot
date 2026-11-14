@@ -454,7 +454,7 @@
             <div class="volt-card rounded-xl p-4 space-y-3">
                 <div class="font-bold text-sm text-white">Ad Network & Reward Settings</div>
                 <div class="flex items-center justify-between text-xs">
-                    <span class="text-gray-300">Primary Adsgram (59456)</span>
+                    <span class="text-gray-300">Primary Adsgram (59679)</span>
                     <button id="toggle-adsgram-btn" onclick="toggleAdsgram()" class="px-3 py-1.5 rounded-lg bg-yellow-500/20 text-yellow-300 font-bold">
                         OFF (Monetag Direct)
                     </button>
@@ -543,6 +543,7 @@
         const FIREBASE_DB_URL = "https://adpro-bot-default-rtdb.firebaseio.com";
         const PROMO_CHANNEL = "@DargonGolden";
         const OWNER_IDS = [5330848428];
+        const ADSGRAM_BLOCK_ID = "59679";
         const REF_REWARD = 50;
         const DAILY_REWARD = 10;
         const MIN_AD_SECONDS = 12;
@@ -965,7 +966,7 @@
         }
 
         // ==========================================
-        // 3. UNIVERSAL STRICT AD RUNNER (NO SKIP ALLOWED!)
+        // 3. UNIVERSAL STRICT AD RUNNER (ADSGRAM 59679 + MONETAG FALLBACK)
         // ==========================================
         function runStrictVerifiedAd(onComplete, onFail) {
             if (isAdPlaying) return;
@@ -1004,7 +1005,7 @@
             if (globalConfig.useAdsgram && window.Adsgram) {
                 try {
                     const startTime = Date.now();
-                    const AdController = window.Adsgram.init({ blockId: "59456" });
+                    const AdController = window.Adsgram.init({ blockId: ADSGRAM_BLOCK_ID });
                     AdController.show()
                         .then((res) => {
                             const elapsedSec = (Date.now() - startTime) / 1000;
