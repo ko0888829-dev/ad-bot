@@ -80,6 +80,41 @@
 </head>
 <body class="min-h-screen flex flex-col pb-24">
 
+    <!-- HUMAN VERIFICATION MODAL (ANTI-BOT CHECK) -->
+    <div id="human-verify-modal" class="hidden fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex items-center justify-center p-5">
+        <div class="volt-card rounded-2xl p-6 w-full max-w-sm text-center space-y-4 border-yellow-400/40 shadow-2xl">
+            <div class="w-14 h-14 rounded-full bg-yellow-500/20 border border-yellow-400/40 flex items-center justify-center mx-auto text-yellow-400">
+                <i data-lucide="shield-check" class="w-8 h-8"></i>
+            </div>
+            <div>
+                <h3 class="font-black text-lg text-white">Human Verification</h3>
+                <p class="text-xs text-gray-400 mt-1">Anti-Bot Security Check • Solve below to continue</p>
+            </div>
+            <div class="p-4 rounded-xl bg-black/60 border border-white/10">
+                <div class="text-[11px] text-gray-400 mb-1">What is the answer?</div>
+                <div id="captcha-question" class="text-3xl font-black text-yellow-400 tracking-wider">5 + 3 = ?</div>
+            </div>
+            <div id="captcha-options" class="grid grid-cols-3 gap-2"></div>
+            <div id="captcha-error" class="text-xs text-red-400 h-4"></div>
+        </div>
+    </div>
+
+    <!-- BROWSER BLOCK OVERLAY (ONLY ALLOW TELEGRAM MINI APP) -->
+    <div id="browser-block-screen" class="hidden fixed inset-0 z-[110] bg-[#0b0c10] flex items-center justify-center p-6 text-center">
+        <div class="volt-card rounded-2xl p-6 max-w-sm space-y-4 border-red-500/30">
+            <div class="w-14 h-14 rounded-full bg-red-500/15 border border-red-500/30 flex items-center justify-center mx-auto text-red-400">
+                <i data-lucide="lock" class="w-7 h-7"></i>
+            </div>
+            <h2 class="font-black text-lg text-white">Telegram App Required</h2>
+            <p class="text-xs text-gray-400 leading-relaxed">
+                For anti-bot security, VOLT can only be opened inside Telegram Mini App.
+            </p>
+            <a href="https://t.me/Ad_Airdrop_bot/app" class="volt-btn block w-full py-3 rounded-xl font-bold text-sm">
+                Open in Telegram (@Ad_Airdrop_bot)
+            </a>
+        </div>
+    </div>
+
     <!-- Top User Header -->
     <div class="p-4 flex items-center justify-between border-b border-white/5 bg-[#0f1117]">
         <div class="flex items-center gap-3">
@@ -87,12 +122,14 @@
                 V
             </div>
             <div>
-                <div id="user-name" class="font-bold text-sm text-white">Loading...</div>
+                <div id="user-name" class="font-bold text-sm text-white flex items-center gap-1">
+                    Loading...
+                </div>
                 <div id="user-username" class="text-xs text-gray-400">@user</div>
             </div>
         </div>
         <div id="sync-badge" class="px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-mono text-emerald-400">
-            ⚡ Cloud Live
+            ⚡ Verified
         </div>
     </div>
 
@@ -270,10 +307,10 @@
             <div class="volt-card rounded-2xl p-5 text-center space-y-3">
                 <i data-lucide="users" class="w-10 h-10 text-yellow-400 mx-auto"></i>
                 <h2 class="font-bold text-lg">Invite Friends & Earn</h2>
-                <p class="text-xs text-gray-400">Get <span class="text-yellow-400 font-bold">+50 VOLT</span> for every friend who joins using your link!</p>
+                <p class="text-xs text-gray-400">Get <span class="text-yellow-400 font-bold">+50 VOLT</span> when your invited friend passes Human Check & watches 2 ads!</p>
                 <div class="grid grid-cols-2 gap-2 text-center my-2">
                     <div class="p-2.5 rounded-lg bg-black/40 border border-white/10">
-                        <div class="text-[10px] text-gray-400">Invited Friends</div>
+                        <div class="text-[10px] text-gray-400">Verified Friends</div>
                         <div id="ref-count" class="text-lg font-black text-white">0</div>
                     </div>
                     <div class="p-2.5 rounded-lg bg-black/40 border border-white/10">
@@ -318,6 +355,33 @@
                     <i data-lucide="crown" class="w-5 h-5"></i> Admin Control Panel
                 </h2>
                 <span class="text-[10px] px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 font-mono">OWNER ONLY</span>
+            </div>
+
+            <!-- LIVE USER ANALYTICS & DEVICE/IP ANTI-CHEAT MONITOR -->
+            <div class="volt-card rounded-xl p-4 space-y-3 border-cyan-500/30">
+                <div class="flex items-center justify-between">
+                    <div class="font-bold text-sm text-cyan-400 flex items-center gap-1.5">
+                        <i data-lucide="activity" class="w-4 h-4"></i> Live Users & Device/IP Monitor
+                    </div>
+                    <button onclick="loadAllUsersAnalytics()" class="text-xs text-yellow-400 underline">Refresh</button>
+                </div>
+                <div class="grid grid-cols-3 gap-2 text-center">
+                    <div class="p-2.5 rounded-lg bg-black/50 border border-white/10">
+                        <div class="text-[10px] text-gray-400">Total Users</div>
+                        <div id="stat-total-users" class="text-lg font-black text-white">0</div>
+                    </div>
+                    <div class="p-2.5 rounded-lg bg-black/50 border border-emerald-500/20">
+                        <div class="text-[10px] text-emerald-400">Live Online</div>
+                        <div id="stat-online-users" class="text-lg font-black text-emerald-400">0</div>
+                    </div>
+                    <div class="p-2.5 rounded-lg bg-black/50 border border-red-500/20">
+                        <div class="text-[10px] text-red-400">Multi-IP/Dev</div>
+                        <div id="stat-multi-users" class="text-lg font-black text-red-400">0</div>
+                    </div>
+                </div>
+                <div id="admin-users-list" class="max-h-56 overflow-y-auto space-y-1.5 pt-1 text-xs">
+                    <div class="text-gray-500 text-[11px]">Loading active users & IP logs...</div>
+                </div>
             </div>
 
             <!-- Create & Auto-Post Promo Codes to @DargonGolden -->
@@ -443,11 +507,11 @@
         }
 
         // ==========================================
-        // 1. CONFIG & STRICT OWNER SECURITY
+        // 1. CONFIG & STRICT OWNER + DEVICE/IP SECURITY
         // ==========================================
         const FIREBASE_DB_URL = "https://adpro-bot-default-rtdb.firebaseio.com";
         const PROMO_CHANNEL = "@DargonGolden";
-        const OWNER_IDS = [5330848428]; // Strict Telegram Numeric ID only
+        const OWNER_IDS = [5330848428];
         const REF_REWARD = 50;
         const DAILY_REWARD = 10;
         const MIN_AD_SECONDS = 12;
@@ -456,8 +520,58 @@
         const user = tgUser || { id: 'guest_browser', first_name: 'Guest', username: '' };
         const isOwner = Boolean(tgUser?.id) && OWNER_IDS.includes(Number(tgUser.id));
 
+        if (!tgUser?.id) {
+            document.getElementById('browser-block-screen').classList.remove('hidden');
+        }
+
         if (isOwner) {
             document.getElementById('nav-admin').classList.remove('hidden');
+        }
+
+        // Generate Device Fingerprint & Model Info
+        function getDeviceInfo() {
+            const ua = navigator.userAgent || '';
+            let model = 'Mobile Device';
+            const androidMatch = ua.match(/Android[^;]+;\s*([^)]+)\)/);
+            if (androidMatch && androidMatch[1]) {
+                model = androidMatch[1].split('Build')[0].trim();
+            } else if (/iPhone/.test(ua)) {
+                model = 'Apple iPhone';
+            } else if (/iPad/.test(ua)) {
+                model = 'Apple iPad';
+            }
+            const rawSig = `${navigator.platform}|${screen.width}x${screen.height}|${navigator.hardwareConcurrency || 0}|${navigator.language}|${Intl.DateTimeFormat().resolvedOptions().timeZone || ''}`;
+            let hash = 0;
+            for (let i = 0; i < rawSig.length; i++) {
+                hash = ((hash << 5) - hash) + rawSig.charCodeAt(i);
+                hash |= 0;
+            }
+            const deviceId = 'DEV-' + Math.abs(hash).toString(16).toUpperCase();
+            return { deviceId, deviceModel: model };
+        }
+
+        const currentDevice = getDeviceInfo();
+        let currentClientIP = 'Detecting...';
+
+        async function detectClientIP() {
+            try {
+                const res = await fetch('https://api.ipify.org?format=json');
+                const data = await res.json();
+                if (data && data.ip) {
+                    currentClientIP = data.ip;
+                    return data.ip;
+                }
+            } catch (e) {}
+            try {
+                const res2 = await fetch('https://api64.ipify.org?format=json');
+                const data2 = await res2.json();
+                if (data2 && data2.ip) {
+                    currentClientIP = data2.ip;
+                    return data2.ip;
+                }
+            } catch (e) {}
+            currentClientIP = 'Unknown';
+            return 'Unknown';
         }
 
         const DEFAULT_TASKS = [
@@ -467,6 +581,8 @@
         const USER_STORAGE_KEY = `volt_u_${user.id}`;
         let userState = JSON.parse(localStorage.getItem(USER_STORAGE_KEY)) || {
             balance: 0,
+            isHumanVerified: false,
+            lastHumanCheck: null,
             lastDaily: null,
             lastFreeSpin: null,
             bonusSpins: 0,
@@ -478,7 +594,8 @@
             adsWatched: 0,
             refCount: 0,
             refEarned: 0,
-            referredBy: null
+            referredBy: null,
+            refRewardCredited: false
         };
         if (!Array.isArray(userState.usedPromos)) userState.usedPromos = [];
         if (typeof userState.tapCharge !== 'number') userState.tapCharge = 0;
@@ -497,6 +614,7 @@
         let globalPromos = {};
         let taskStats = {};
         let allWithdrawals = [];
+        let allUsersMap = {};
         let openedTasks = {};
         let isAdPlaying = false;
         let currentWheelRotation = 0;
@@ -507,7 +625,76 @@
         let revealedBoxes = {};
 
         // ==========================================
-        // 2. CLOUD SYNC
+        // 1B. HUMAN VERIFICATION GATE (ANTI-BOT CAPTCHA)
+        // ==========================================
+        let pendingHumanCallback = null;
+
+        function isHumanCheckPassedToday() {
+            const today = new Date().toDateString();
+            return userState.isHumanVerified === true && userState.lastHumanCheck === today;
+        }
+
+        function triggerHumanVerification(onVerifiedCallback) {
+            if (isOwner) {
+                userState.isHumanVerified = true;
+                userState.lastHumanCheck = new Date().toDateString();
+                if (onVerifiedCallback) onVerifiedCallback();
+                return;
+            }
+            pendingHumanCallback = onVerifiedCallback || null;
+            const numA = Math.floor(Math.random() * 9) + 2;
+            const numB = Math.floor(Math.random() * 9) + 1;
+            const correctAns = numA + numB;
+
+            document.getElementById('captcha-question').textContent = `${numA} + ${numB} = ?`;
+            document.getElementById('captcha-error').textContent = '';
+
+            const opts = new Set([correctAns]);
+            while (opts.size < 3) {
+                const fake = correctAns + (Math.floor(Math.random() * 7) - 3);
+                if (fake > 0 && fake !== correctAns) opts.add(fake);
+            }
+            const shuffled = Array.from(opts).sort(() => Math.random() - 0.5);
+
+            const optsDiv = document.getElementById('captcha-options');
+            optsDiv.innerHTML = shuffled.map(val => `
+                <button onclick="submitHumanCaptcha(${val}, ${correctAns})" class="py-3 rounded-xl bg-white/10 hover:bg-yellow-400 hover:text-black font-black text-base text-white border border-white/15 transition-all">
+                    ${val}
+                </button>
+            `).join('');
+
+            document.getElementById('human-verify-modal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        async function submitHumanCaptcha(selected, expected) {
+            if (selected !== expected) {
+                document.getElementById('captcha-error').textContent = 'Wrong answer! Try again.';
+                if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+                return;
+            }
+            userState.isHumanVerified = true;
+            userState.lastHumanCheck = new Date().toDateString();
+            document.getElementById('human-verify-modal').classList.add('hidden');
+            if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+            await saveUserToCloud();
+            await checkAndCreditReferralIfEligible();
+            if (pendingHumanCallback) {
+                const cb = pendingHumanCallback;
+                pendingHumanCallback = null;
+                cb();
+            }
+        }
+
+        function requireHumanCheck(actionFn) {
+            if (isHumanCheckPassedToday()) {
+                return actionFn();
+            }
+            triggerHumanVerification(actionFn);
+        }
+
+        // ==========================================
+        // 2. CLOUD SYNC & USER ANALYTICS
         // ==========================================
         async function saveUserToCloud() {
             localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userState));
@@ -520,12 +707,19 @@
                     body: JSON.stringify({
                         name: user.first_name || 'User',
                         username: user.username || '',
+                        isHumanVerified: !!userState.isHumanVerified,
+                        adsWatched: userState.adsWatched || 0,
                         balance: userState.balance,
                         refCount: userState.refCount || 0,
                         refEarned: userState.refEarned || 0,
                         referredBy: userState.referredBy || null,
+                        refRewardCredited: !!userState.refRewardCredited,
                         usedPromos: userState.usedPromos || [],
-                        completedTasks: userState.completedTasks || []
+                        completedTasks: userState.completedTasks || [],
+                        ip: currentClientIP,
+                        deviceId: currentDevice.deviceId,
+                        deviceModel: currentDevice.deviceModel,
+                        lastActive: Date.now()
                     })
                 });
             } catch (e) { console.error(e); }
@@ -540,9 +734,13 @@
                     if (typeof data.balance === 'number' && data.balance > userState.balance) {
                         userState.balance = data.balance;
                     }
+                    if (typeof data.adsWatched === 'number' && data.adsWatched > userState.adsWatched) {
+                        userState.adsWatched = data.adsWatched;
+                    }
                     if (typeof data.refCount === 'number') userState.refCount = data.refCount;
                     if (typeof data.refEarned === 'number') userState.refEarned = data.refEarned;
                     if (data.referredBy) userState.referredBy = data.referredBy;
+                    if (data.refRewardCredited) userState.refRewardCredited = true;
                     if (Array.isArray(data.usedPromos)) {
                         userState.usedPromos = Array.from(new Set([...userState.usedPromos, ...data.usedPromos]));
                     }
@@ -551,6 +749,16 @@
                     }
                     localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userState));
                 }
+            } catch (e) { console.error(e); }
+        }
+
+        async function loadAllUsersAnalytics() {
+            if (!isOwner) return;
+            try {
+                const res = await fetch(`${FIREBASE_DB_URL}/users.json`);
+                const data = await res.json();
+                allUsersMap = (data && typeof data === 'object') ? data : {};
+                updateUI();
             } catch (e) { console.error(e); }
         }
 
@@ -625,7 +833,10 @@
             await loadTaskStatsFromCloud();
             await loadUserFromCloud();
             await loadPromosFromCloud();
-            if (isOwner) await loadWithdrawalsFromCloud();
+            if (isOwner) {
+                await loadAllUsersAnalytics();
+                await loadWithdrawalsFromCloud();
+            }
             updateUI();
         }
 
@@ -703,7 +914,6 @@
             if (gameName === 'box') renderMysteryGrid();
         }
 
-        // --- GAME 1: LUCKY WHEEL ---
         const WHEEL_SEGMENTS = [
             { label: '25 VOLT', reward: 25, extraSpin: false, weight: 35, centerDeg: 30 },
             { label: '50 VOLT', reward: 50, extraSpin: false, weight: 45, centerDeg: 90 },
@@ -762,40 +972,41 @@
         }
 
         function handleSpinWheel() {
-            if (isSpinning) return;
-            const today = new Date().toDateString();
+            requireHumanCheck(() => {
+                if (isSpinning) return;
+                const today = new Date().toDateString();
 
-            if ((userState.bonusSpins || 0) > 0) {
-                userState.bonusSpins -= 1;
-                localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userState));
-                return executeWheelSpin();
-            }
-
-            if (userState.lastFreeSpin !== today) {
-                userState.lastFreeSpin = today;
-                localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userState));
-                return executeWheelSpin();
-            }
-
-            const spinBtn = document.getElementById('spin-btn');
-            const statusEl = document.getElementById('wheel-status');
-            spinBtn.disabled = true;
-            spinBtn.textContent = 'Watching Ad...';
-            statusEl.textContent = `Watch full ad (${MIN_AD_SECONDS}s+) to unlock spin...`;
-
-            runStrictVerifiedAd(
-                () => {
-                    executeWheelSpin();
-                },
-                (errMsg) => {
-                    statusEl.textContent = errMsg;
-                    statusEl.className = 'text-xs text-red-400 h-4';
-                    updateUI();
+                if ((userState.bonusSpins || 0) > 0) {
+                    userState.bonusSpins -= 1;
+                    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userState));
+                    return executeWheelSpin();
                 }
-            );
+
+                if (userState.lastFreeSpin !== today) {
+                    userState.lastFreeSpin = today;
+                    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userState));
+                    return executeWheelSpin();
+                }
+
+                const spinBtn = document.getElementById('spin-btn');
+                const statusEl = document.getElementById('wheel-status');
+                spinBtn.disabled = true;
+                spinBtn.textContent = 'Watching Ad...';
+                statusEl.textContent = `Watch full ad (${MIN_AD_SECONDS}s+) to unlock spin...`;
+
+                runStrictVerifiedAd(
+                    () => {
+                        executeWheelSpin();
+                    },
+                    (errMsg) => {
+                        statusEl.textContent = errMsg;
+                        statusEl.className = 'text-xs text-red-400 h-4';
+                        updateUI();
+                    }
+                );
+            });
         }
 
-        // --- GAME 2: MYSTERY BOX (9 BOXES: 2 EMPTIES + 7 RANDOM PRIZES) ---
         const BOX_PRIZE_POOL = [
             { reward: 25, weight: 25 },
             { reward: 50, weight: 35 },
@@ -858,33 +1069,35 @@
             }
         }
 
-        async function pickMysteryBox(index) {
-            if (!boxCanPick || revealedBoxes[index] !== undefined) {
-                return tg?.showAlert ? tg.showAlert('Tap "Watch Ad for +1 Box Pick" below to open another box!') : null;
-            }
+        function pickMysteryBox(index) {
+            requireHumanCheck(async () => {
+                if (!boxCanPick || revealedBoxes[index] !== undefined) {
+                    return tg?.showAlert ? tg.showAlert('Tap "Watch Ad for +1 Box Pick" below to open another box!') : null;
+                }
 
-            const today = new Date().toDateString();
-            if (userState.lastFreeBox !== today) {
-                userState.lastFreeBox = today;
-            }
-            boxCanPick = false;
+                const today = new Date().toDateString();
+                if (userState.lastFreeBox !== today) {
+                    userState.lastFreeBox = today;
+                }
+                boxCanPick = false;
 
-            const rewardVal = boxBoard[index];
-            revealedBoxes[index] = rewardVal;
+                const rewardVal = boxBoard[index];
+                revealedBoxes[index] = rewardVal;
 
-            const statusEl = document.getElementById('box-status');
-            if (rewardVal > 0) {
-                userState.balance += rewardVal;
-                await saveUserToCloud();
-                statusEl.textContent = `🎉 Found +${rewardVal} VOLT inside!`;
-                statusEl.className = 'text-xs text-emerald-400 font-bold';
-                if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-            } else {
-                localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userState));
-                statusEl.textContent = '😅 Empty box! Watch ad to open another box.';
-                statusEl.className = 'text-xs text-amber-400';
-            }
-            renderMysteryGrid();
+                const statusEl = document.getElementById('box-status');
+                if (rewardVal > 0) {
+                    userState.balance += rewardVal;
+                    await saveUserToCloud();
+                    statusEl.textContent = `🎉 Found +${rewardVal} VOLT inside!`;
+                    statusEl.className = 'text-xs text-emerald-400 font-bold';
+                    if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                } else {
+                    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userState));
+                    statusEl.textContent = '😅 Empty box! Watch ad to open another box.';
+                    statusEl.className = 'text-xs text-amber-400';
+                }
+                renderMysteryGrid();
+            });
         }
 
         function unlockExtraBox() {
@@ -914,26 +1127,27 @@
             );
         }
 
-        // --- GAME 3: THUNDER TAP (ENERGY CHARGE) ---
-        async function handleThunderTap() {
-            if (userState.tapEnergy <= 0) {
-                return tg?.showAlert ? tg.showAlert('Battery empty! Watch an ad to recharge battery.') : null;
-            }
+        function handleThunderTap() {
+            requireHumanCheck(async () => {
+                if (userState.tapEnergy <= 0) {
+                    return tg?.showAlert ? tg.showAlert('Battery empty! Watch an ad to recharge battery.') : null;
+                }
 
-            userState.tapEnergy -= 1;
-            userState.tapCharge += 5;
-            if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+                userState.tapEnergy -= 1;
+                userState.tapCharge += 5;
+                if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
 
-            if (userState.tapCharge >= 100) {
-                userState.tapCharge = 0;
-                userState.balance += 50;
-                await saveUserToCloud();
-                if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-                if (tg?.showAlert) tg.showAlert('⚡ 100% Charged! +50 VOLT added to your balance!');
-            } else {
-                localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userState));
-                updateUI();
-            }
+                if (userState.tapCharge >= 100) {
+                    userState.tapCharge = 0;
+                    userState.balance += 50;
+                    await saveUserToCloud();
+                    if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                    if (tg?.showAlert) tg.showAlert('⚡ 100% Charged! +50 VOLT added to your balance!');
+                } else {
+                    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userState));
+                    updateUI();
+                }
+            });
         }
 
         function rechargeTapBattery() {
@@ -961,141 +1175,150 @@
         // 5. HOME AD, DAILY CHECK-IN & PROMO CODE
         // ==========================================
         function handleWatchAd() {
-            const btn = document.getElementById('watch-ad-btn');
-            const btnText = document.getElementById('watch-ad-text');
-            const statusEl = document.getElementById('ad-status-msg');
+            requireHumanCheck(() => {
+                const btn = document.getElementById('watch-ad-btn');
+                const btnText = document.getElementById('watch-ad-text');
+                const statusEl = document.getElementById('ad-status-msg');
 
-            btn.disabled = true;
-            btnText.textContent = 'Watching Ad...';
-            statusEl.textContent = `Watch full ad (${MIN_AD_SECONDS}s+) to earn +${globalConfig.adReward} VOLT...`;
-            statusEl.className = 'text-xs text-gray-400 mt-2 h-4';
+                btn.disabled = true;
+                btnText.textContent = 'Watching Ad...';
+                statusEl.textContent = `Watch full ad (${MIN_AD_SECONDS}s+) to earn +${globalConfig.adReward} VOLT...`;
+                statusEl.className = 'text-xs text-gray-400 mt-2 h-4';
 
-            runStrictVerifiedAd(
-                async () => {
-                    userState.balance += globalConfig.adReward;
-                    userState.adsWatched += 1;
-                    await saveUserToCloud();
-                    statusEl.textContent = `+${globalConfig.adReward} VOLT earned!`;
-                    statusEl.className = 'text-xs text-emerald-400 mt-2 h-4';
-                    btn.disabled = false;
-                    btnText.textContent = `Watch Ad (+${globalConfig.adReward} VOLT)`;
-                    if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-                },
-                (errMsg) => {
-                    statusEl.textContent = errMsg;
-                    statusEl.className = 'text-xs text-red-400 mt-2 h-4';
-                    btn.disabled = false;
-                    btnText.textContent = `Watch Ad (+${globalConfig.adReward} VOLT)`;
-                }
-            );
+                runStrictVerifiedAd(
+                    async () => {
+                        userState.balance += globalConfig.adReward;
+                        userState.adsWatched += 1;
+                        await saveUserToCloud();
+                        await checkAndCreditReferralIfEligible();
+                        statusEl.textContent = `+${globalConfig.adReward} VOLT earned!`;
+                        statusEl.className = 'text-xs text-emerald-400 mt-2 h-4';
+                        btn.disabled = false;
+                        btnText.textContent = `Watch Ad (+${globalConfig.adReward} VOLT)`;
+                        if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                    },
+                    (errMsg) => {
+                        statusEl.textContent = errMsg;
+                        statusEl.className = 'text-xs text-red-400 mt-2 h-4';
+                        btn.disabled = false;
+                        btnText.textContent = `Watch Ad (+${globalConfig.adReward} VOLT)`;
+                    }
+                );
+            });
         }
 
         function claimDaily() {
-            const today = new Date().toDateString();
-            if (userState.lastDaily === today) return;
+            requireHumanCheck(() => {
+                const today = new Date().toDateString();
+                if (userState.lastDaily === today) return;
 
-            const dailyBtn = document.getElementById('daily-btn');
-            dailyBtn.disabled = true;
-            dailyBtn.textContent = 'Ad...';
+                const dailyBtn = document.getElementById('daily-btn');
+                dailyBtn.disabled = true;
+                dailyBtn.textContent = 'Ad...';
 
-            runStrictVerifiedAd(
-                async () => {
-                    userState.lastDaily = today;
-                    userState.balance += DAILY_REWARD;
-                    await saveUserToCloud();
-                    if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-                    if (tg?.showAlert) tg.showAlert(`Daily Check-in complete! +${DAILY_REWARD} VOLT added.`);
-                },
-                () => {
-                    dailyBtn.disabled = false;
-                    dailyBtn.textContent = 'Claim';
-                }
-            );
+                runStrictVerifiedAd(
+                    async () => {
+                        userState.lastDaily = today;
+                        userState.balance += DAILY_REWARD;
+                        userState.adsWatched += 1;
+                        await saveUserToCloud();
+                        await checkAndCreditReferralIfEligible();
+                        if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                        if (tg?.showAlert) tg.showAlert(`Daily Check-in complete! +${DAILY_REWARD} VOLT added.`);
+                    },
+                    () => {
+                        dailyBtn.disabled = false;
+                        dailyBtn.textContent = 'Claim';
+                    }
+                );
+            });
         }
 
-        async function redeemPromoCode() {
-            const input = document.getElementById('promo-code-input');
-            const btn = document.getElementById('promo-btn');
-            const statusEl = document.getElementById('promo-status-msg');
-            const code = input.value.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '');
+        function redeemPromoCode() {
+            requireHumanCheck(async () => {
+                const input = document.getElementById('promo-code-input');
+                const btn = document.getElementById('promo-btn');
+                const statusEl = document.getElementById('promo-status-msg');
+                const code = input.value.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '');
 
-            const showPromoStatus = (msg, isErr = true) => {
-                statusEl.textContent = msg;
-                statusEl.className = `text-[11px] ${isErr ? 'text-red-400' : 'text-emerald-400'} block`;
-            };
+                const showPromoStatus = (msg, isErr = true) => {
+                    statusEl.textContent = msg;
+                    statusEl.className = `text-[11px] ${isErr ? 'text-red-400' : 'text-emerald-400'} block`;
+                };
 
-            if (!code) {
-                return showPromoStatus('Please enter a promo code first.');
-            }
-            if (userState.usedPromos.includes(code)) {
-                return showPromoStatus('You have already redeemed this promo code.');
-            }
+                if (!code) {
+                    return showPromoStatus('Please enter a promo code first.');
+                }
+                if (userState.usedPromos.includes(code)) {
+                    return showPromoStatus('You have already redeemed this promo code.');
+                }
 
-            btn.disabled = true;
-            btn.textContent = 'Checking...';
-            showPromoStatus('Verifying promo code...', false);
+                btn.disabled = true;
+                btn.textContent = 'Checking...';
+                showPromoStatus('Verifying promo code...', false);
 
-            await loadPromosFromCloud();
-            const promo = globalPromos[code];
+                await loadPromosFromCloud();
+                const promo = globalPromos[code];
 
-            if (!promo || !promo.reward) {
-                btn.disabled = false;
-                btn.textContent = 'Redeem';
-                return showPromoStatus('Invalid or expired promo code.');
-            }
+                if (!promo || !promo.reward) {
+                    btn.disabled = false;
+                    btn.textContent = 'Redeem';
+                    return showPromoStatus('Invalid or expired promo code.');
+                }
 
-            const usedCount = Number(promo.usedCount || 0);
-            const maxUses = Number(promo.maxUses || 0);
-            if (maxUses > 0 && usedCount >= maxUses) {
-                btn.disabled = false;
-                btn.textContent = 'Redeem';
-                return showPromoStatus('This promo code has reached its max limit.');
-            }
+                const usedCount = Number(promo.usedCount || 0);
+                const maxUses = Number(promo.maxUses || 0);
+                if (maxUses > 0 && usedCount >= maxUses) {
+                    btn.disabled = false;
+                    btn.textContent = 'Redeem';
+                    return showPromoStatus('This promo code has reached its max limit.');
+                }
 
-            btn.textContent = 'Watch Ad...';
-            showPromoStatus(`Valid code (+${promo.reward} VOLT)! Watch full ad (${MIN_AD_SECONDS}s+) to claim...`, false);
+                btn.textContent = 'Watch Ad...';
+                showPromoStatus(`Valid code (+${promo.reward} VOLT)! Watch full ad (${MIN_AD_SECONDS}s+) to claim...`, false);
 
-            runStrictVerifiedAd(
-                async () => {
-                    await loadPromosFromCloud();
-                    const freshPromo = globalPromos[code];
-                    const freshUsed = Number((freshPromo && freshPromo.usedCount) || 0);
-                    if (!freshPromo || (freshPromo.maxUses > 0 && freshUsed >= freshPromo.maxUses)) {
+                runStrictVerifiedAd(
+                    async () => {
+                        await loadPromosFromCloud();
+                        const freshPromo = globalPromos[code];
+                        const freshUsed = Number((freshPromo && freshPromo.usedCount) || 0);
+                        if (!freshPromo || (freshPromo.maxUses > 0 && freshUsed >= freshPromo.maxUses)) {
+                            btn.disabled = false;
+                            btn.textContent = 'Redeem';
+                            return showPromoStatus('Sorry, promo code limit just filled up.');
+                        }
+
+                        const rewardAmt = Number(freshPromo.reward);
+                        userState.usedPromos.push(code);
+                        userState.balance += rewardAmt;
+                        await saveUserToCloud();
+
+                        try {
+                            await fetch(`${FIREBASE_DB_URL}/promocodes/${code}.json`, {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ usedCount: freshUsed + 1 })
+                            });
+                        } catch (e) { console.error(e); }
+
+                        input.value = '';
                         btn.disabled = false;
                         btn.textContent = 'Redeem';
-                        return showPromoStatus('Sorry, promo code limit just filled up.');
+                        showPromoStatus(`Success! +${rewardAmt} VOLT redeemed from ${code}!`, false);
+                        if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                        if (tg?.showAlert) tg.showAlert(`Promo Code ${code} redeemed! +${rewardAmt} VOLT added!`);
+                    },
+                    (errMsg) => {
+                        btn.disabled = false;
+                        btn.textContent = 'Redeem';
+                        showPromoStatus(errMsg, true);
                     }
-
-                    const rewardAmt = Number(freshPromo.reward);
-                    userState.usedPromos.push(code);
-                    userState.balance += rewardAmt;
-                    await saveUserToCloud();
-
-                    try {
-                        await fetch(`${FIREBASE_DB_URL}/promocodes/${code}.json`, {
-                            method: 'PATCH',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ usedCount: freshUsed + 1 })
-                        });
-                    } catch (e) { console.error(e); }
-
-                    input.value = '';
-                    btn.disabled = false;
-                    btn.textContent = 'Redeem';
-                    showPromoStatus(`Success! +${rewardAmt} VOLT redeemed from ${code}!`, false);
-                    if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-                    if (tg?.showAlert) tg.showAlert(`Promo Code ${code} redeemed! +${rewardAmt} VOLT added!`);
-                },
-                (errMsg) => {
-                    btn.disabled = false;
-                    btn.textContent = 'Redeem';
-                    showPromoStatus(errMsg, true);
-                }
-            );
+                );
+            });
         }
 
         // ==========================================
-        // 6. REFERRAL SYSTEM (+50 VOLT VIA DIRECT MINI APP LINK)
+        // 6. REFERRAL SYSTEM (ANTI-FAKE + DEVICE/IP CHECK)
         // ==========================================
         async function processReferralOnStart() {
             const urlParams = new URLSearchParams(window.location.search);
@@ -1109,13 +1332,28 @@
 
             userState.referredBy = referrerId;
             await saveUserToCloud();
+        }
+
+        async function checkAndCreditReferralIfEligible() {
+            if (!userState.referredBy || userState.refRewardCredited || !tgUser?.id) return;
+            if (!userState.isHumanVerified || (userState.adsWatched || 0) < 2) return;
+
+            userState.refRewardCredited = true;
+            await saveUserToCloud();
 
             try {
+                const referrerId = userState.referredBy;
                 const res = await fetch(`${FIREBASE_DB_URL}/users/${referrerId}.json`);
                 const refUser = await res.json();
-                const newBal = ((refUser && refUser.balance) || 0) + REF_REWARD;
-                const newCount = ((refUser && refUser.refCount) || 0) + 1;
-                const newEarned = ((refUser && refUser.refEarned) || 0) + REF_REWARD;
+                if (!refUser) return;
+
+                // Block self-referral from exact same device or IP
+                if (refUser.deviceId && refUser.deviceId === currentDevice.deviceId) return;
+                if (refUser.ip && refUser.ip !== 'Unknown' && refUser.ip === currentClientIP) return;
+
+                const newBal = (refUser.balance || 0) + REF_REWARD;
+                const newCount = (refUser.refCount || 0) + 1;
+                const newEarned = (refUser.refEarned || 0) + REF_REWARD;
 
                 await fetch(`${FIREBASE_DB_URL}/users/${referrerId}.json`, {
                     method: 'PATCH',
@@ -1168,88 +1406,92 @@
             }
         }
 
-        async function handleTaskAction(id, reward, url) {
-            if (userState.completedTasks.includes(id)) return;
+        function handleTaskAction(id, reward, url) {
+            requireHumanCheck(async () => {
+                if (userState.completedTasks.includes(id)) return;
 
-            await loadTaskStatsFromCloud();
-            const taskObj = (globalConfig.tasks || []).find(t => t.id === id);
-            const maxUsers = Number((taskObj && taskObj.maxUsers) || 0);
-            const currentCount = Number(taskStats[id] || 0);
+                await loadTaskStatsFromCloud();
+                const taskObj = (globalConfig.tasks || []).find(t => t.id === id);
+                const maxUsers = Number((taskObj && taskObj.maxUsers) || 0);
+                const currentCount = Number(taskStats[id] || 0);
 
-            if (maxUsers > 0 && currentCount >= maxUsers) {
-                updateUI();
-                return tg?.showAlert ? tg.showAlert('Sorry! This task has reached its maximum user limit.') : alert('Task limit full!');
-            }
-
-            if (!openedTasks[id]) {
-                openedTasks[id] = true;
-                window.open(url, '_blank');
-                updateUI();
-                return;
-            }
-
-            const btn = document.getElementById(`task-btn-${id}`);
-            if (btn) {
-                btn.disabled = true;
-                btn.textContent = 'Checking...';
-            }
-
-            const channelUsername = extractChannelUsername(url);
-            if (channelUsername && globalConfig.botToken) {
-                const check = await verifyChannelMembership(channelUsername);
-                if (!check.verified) {
-                    if (btn) {
-                        btn.disabled = false;
-                        btn.textContent = 'Verify';
-                    }
-                    const alertMsg = check.reason && check.reason.includes('chat not found')
-                        ? 'Bot is not Admin in this channel yet. Ask Admin to add Bot!'
-                        : `You haven't joined ${channelUsername} yet! Please join first and tap Verify.`;
-                    return tg?.showAlert ? tg.showAlert(alertMsg) : alert(alertMsg);
+                if (maxUsers > 0 && currentCount >= maxUsers) {
+                    updateUI();
+                    return tg?.showAlert ? tg.showAlert('Sorry! This task has reached its maximum user limit.') : alert('Task limit full!');
                 }
-            }
 
-            if (btn) {
-                btn.textContent = 'Ad...';
-            }
-
-            runStrictVerifiedAd(
-                async () => {
-                    await loadTaskStatsFromCloud();
-                    const freshCount = Number(taskStats[id] || 0);
-                    if (maxUsers > 0 && freshCount >= maxUsers) {
-                        updateUI();
-                        return tg?.showAlert ? tg.showAlert('Sorry! This task just filled up.') : alert('Task limit full!');
-                    }
-
-                    const updatedCount = freshCount + 1;
-                    taskStats[id] = updatedCount;
-                    try {
-                        await fetch(`${FIREBASE_DB_URL}/task_stats.json`, {
-                            method: 'PATCH',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ [id]: updatedCount })
-                        });
-                    } catch (e) { console.error(e); }
-
-                    userState.completedTasks.push(id);
-                    userState.balance += reward;
-                    await saveUserToCloud();
-                    if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-                    if (tg?.showAlert) tg.showAlert(`Verified & Ad Completed! +${reward} VOLT added!`);
-                },
-                (errMsg) => {
-                    if (btn) {
-                        btn.disabled = false;
-                        btn.textContent = 'Verify';
-                    }
-                    if (tg?.showAlert && errMsg) tg.showAlert(errMsg);
+                if (!openedTasks[id]) {
+                    openedTasks[id] = true;
+                    window.open(url, '_blank');
+                    updateUI();
+                    return;
                 }
-            );
+
+                const btn = document.getElementById(`task-btn-${id}`);
+                if (btn) {
+                    btn.disabled = true;
+                    btn.textContent = 'Checking...';
+                }
+
+                const channelUsername = extractChannelUsername(url);
+                if (channelUsername && globalConfig.botToken) {
+                    const check = await verifyChannelMembership(channelUsername);
+                    if (!check.verified) {
+                        if (btn) {
+                            btn.disabled = false;
+                            btn.textContent = 'Verify';
+                        }
+                        const alertMsg = check.reason && check.reason.includes('chat not found')
+                            ? 'Bot is not Admin in this channel yet. Ask Admin to add Bot!'
+                            : `You haven't joined ${channelUsername} yet! Please join first and tap Verify.`;
+                        return tg?.showAlert ? tg.showAlert(alertMsg) : alert(alertMsg);
+                    }
+                }
+
+                if (btn) {
+                    btn.textContent = 'Ad...';
+                }
+
+                runStrictVerifiedAd(
+                    async () => {
+                        await loadTaskStatsFromCloud();
+                        const freshCount = Number(taskStats[id] || 0);
+                        if (maxUsers > 0 && freshCount >= maxUsers) {
+                            updateUI();
+                            return tg?.showAlert ? tg.showAlert('Sorry! This task just filled up.') : alert('Task limit full!');
+                        }
+
+                        const updatedCount = freshCount + 1;
+                        taskStats[id] = updatedCount;
+                        try {
+                            await fetch(`${FIREBASE_DB_URL}/task_stats.json`, {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ [id]: updatedCount })
+                            });
+                        } catch (e) { console.error(e); }
+
+                        userState.completedTasks.push(id);
+                        userState.balance += reward;
+                        userState.adsWatched += 1;
+                        await saveUserToCloud();
+                        await checkAndCreditReferralIfEligible();
+                        if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                        if (tg?.showAlert) tg.showAlert(`Verified & Ad Completed! +${reward} VOLT added!`);
+                    },
+                    (errMsg) => {
+                        if (btn) {
+                            btn.disabled = false;
+                            btn.textContent = 'Verify';
+                        }
+                        if (tg?.showAlert && errMsg) tg.showAlert(errMsg);
+                    }
+                );
+            });
         }
 
         // ==========================================
-        // 8. UI RENDERING
+        // 8. UI RENDERING & DEVICE/IP ANALYTICS
         // ==========================================
         function maskAddress(addr) {
             if (!addr || addr.length < 12) return addr;
@@ -1281,8 +1523,23 @@
             }
         }
 
+        function getDuplicateCounts() {
+            const ipMap = {};
+            const devMap = {};
+            Object.values(allUsersMap || {}).forEach(u => {
+                if (u.ip && u.ip !== 'Unknown' && u.ip !== 'Detecting...') {
+                    ipMap[u.ip] = (ipMap[u.ip] || 0) + 1;
+                }
+                if (u.deviceId) {
+                    devMap[u.deviceId] = (devMap[u.deviceId] || 0) + 1;
+                }
+            });
+            return { ipMap, devMap };
+        }
+
         function updateUI() {
-            document.getElementById('user-name').textContent = user.first_name || 'VOLT User';
+            const nameEl = document.getElementById('user-name');
+            nameEl.innerHTML = `${user.first_name || 'VOLT User'} ${isHumanCheckPassedToday() ? '<span class="text-emerald-400 text-xs">✔</span>' : ''}`;
             document.getElementById('user-username').textContent = user.username ? `@${user.username}` : `ID: ${user.id}`;
             document.getElementById('user-avatar').textContent = (user.first_name || 'V')[0].toUpperCase();
             document.getElementById('volt-balance').textContent = userState.balance.toLocaleString();
@@ -1290,6 +1547,15 @@
             document.getElementById('ref-count').textContent = userState.refCount || 0;
             document.getElementById('ref-earned').textContent = `${(userState.refEarned || 0).toLocaleString()} VOLT`;
             document.getElementById('watch-ad-text').textContent = `Watch Ad (+${globalConfig.adReward} VOLT)`;
+
+            const badgeEl = document.getElementById('sync-badge');
+            if (isHumanCheckPassedToday()) {
+                badgeEl.textContent = '🛡️ Human Verified';
+                badgeEl.className = 'px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-xs font-mono text-emerald-400';
+            } else {
+                badgeEl.textContent = '⚠️ Unverified';
+                badgeEl.className = 'px-3 py-1.5 rounded-full bg-yellow-500/10 border border-yellow-500/30 text-xs font-mono text-yellow-400';
+            }
 
             const today = new Date().toDateString();
 
@@ -1362,6 +1628,48 @@
             });
 
             if (isOwner) {
+                // Render Live Users & IP/Device Analytics
+                const userEntries = Object.entries(allUsersMap || {});
+                const { ipMap, devMap } = getDuplicateCounts();
+                const now = Date.now();
+                let onlineCount = 0;
+                let multiCount = 0;
+
+                userEntries.sort((a, b) => (b[1].lastActive || 0) - (a[1].lastActive || 0));
+
+                const usersHtml = userEntries.map(([uid, u]) => {
+                    const isOnline = u.lastActive && (now - u.lastActive) < 120000; // active within 2 mins
+                    if (isOnline) onlineCount++;
+                    const ipDup = (u.ip && ipMap[u.ip]) ? ipMap[u.ip] : 1;
+                    const devDup = (u.deviceId && devMap[u.deviceId]) ? devMap[u.deviceId] : 1;
+                    const isSuspicious = ipDup > 1 || devDup > 1;
+                    if (isSuspicious) multiCount++;
+
+                    return `
+                        <div class="p-2 rounded bg-black/40 border ${isSuspicious ? 'border-red-500/30' : 'border-white/5'} flex items-center justify-between gap-2">
+                            <div class="min-w-0">
+                                <div class="font-bold text-white truncate flex items-center gap-1.5">
+                                    <span class="w-2 h-2 rounded-full ${isOnline ? 'bg-emerald-400' : 'bg-gray-600'} shrink-0"></span>
+                                    <span>${u.name || 'User'}</span>
+                                    <span class="text-gray-400 font-normal text-[10px]">${u.username ? `@${u.username}` : `(${uid})`}</span>
+                                </div>
+                                <div class="text-[10px] font-mono text-gray-400 truncate mt-0.5">
+                                    🌐 ${u.ip || 'N/A'} ${ipDup > 1 ? `<span class="text-red-400 font-bold">[${ipDup}x IP]</span>` : ''} • 📱 ${u.deviceModel || 'Unknown'} (${u.deviceId || 'N/A'}) ${devDup > 1 ? `<span class="text-red-400 font-bold">[${devDup}x Dev]</span>` : ''}
+                                </div>
+                            </div>
+                            <div class="text-right shrink-0">
+                                <div class="text-yellow-400 font-bold">${Number(u.balance || 0).toLocaleString()}</div>
+                                <div class="text-[9px] text-gray-500">Ads: ${u.adsWatched || 0}</div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                document.getElementById('stat-total-users').textContent = userEntries.length.toLocaleString();
+                document.getElementById('stat-online-users').textContent = onlineCount.toLocaleString();
+                document.getElementById('stat-multi-users').textContent = multiCount.toLocaleString();
+                document.getElementById('admin-users-list').innerHTML = usersHtml || '<div class="text-gray-500 text-[11px]">No user records yet.</div>';
+
                 if (globalConfig.botToken) document.getElementById('admin-bot-token').value = globalConfig.botToken;
                 document.getElementById('admin-channel-id').value = globalConfig.channelId || '@GoldenSteal';
                 if (globalConfig.adminChatId) {
@@ -1419,6 +1727,9 @@
                                 <span class="text-white font-bold">${w.userName} (${w.userTag || ''})</span>
                                 <span class="text-yellow-400 font-bold">${Number(w.amount).toLocaleString()} VOLT (${w.tonAmount} TON)</span>
                             </div>
+                            <div class="text-[10px] font-mono text-cyan-300 bg-cyan-500/10 px-2 py-1 rounded">
+                                🌐 IP: ${w.ip || 'N/A'} • 📱 ${w.deviceModel || 'N/A'} (${w.deviceId || 'N/A'})
+                            </div>
                             <div onclick="copyText('${w.address}', 'Wallet address copied!')" class="p-2 rounded bg-white/5 border border-white/10 font-mono text-[11px] text-emerald-300 break-all cursor-pointer flex items-center justify-between gap-2">
                                 <span>${w.address}</span>
                                 <span class="text-[10px] bg-white/10 px-1.5 py-0.5 rounded text-white shrink-0">Copy</span>
@@ -1438,71 +1749,82 @@
         }
 
         // ==========================================
-        // 9. WITHDRAW SYSTEM (10,000 VOLT = 0.10 TON, MIN 10,000 VOLT)
+        // 9. WITHDRAW SYSTEM (INCLUDES IP & DEVICE CHECK)
         // ==========================================
-        async function submitWithdraw() {
-            const addr = document.getElementById('ton-address').value.trim();
-            const amt = parseInt(document.getElementById('withdraw-amount').value, 10);
-            if (!addr || addr.length < 20) {
-                return tg?.showAlert ? tg.showAlert('Please enter a valid TON wallet address.') : alert('Invalid address');
-            }
-            if (!amt || amt < 10000) {
-                return tg?.showAlert ? tg.showAlert('Minimum withdrawal is 10,000 VOLT (0.10 TON).') : alert('Minimum 10,000 VOLT');
-            }
-            if (amt > userState.balance) {
-                return tg?.showAlert ? tg.showAlert('Insufficient VOLT balance.') : alert('Insufficient balance');
-            }
+        function submitWithdraw() {
+            requireHumanCheck(async () => {
+                const addr = document.getElementById('ton-address').value.trim();
+                const amt = parseInt(document.getElementById('withdraw-amount').value, 10);
+                if (!addr || addr.length < 20) {
+                    return tg?.showAlert ? tg.showAlert('Please enter a valid TON wallet address.') : alert('Invalid address');
+                }
+                if (!amt || amt < 10000) {
+                    return tg?.showAlert ? tg.showAlert('Minimum withdrawal is 10,000 VOLT (0.10 TON).') : alert('Minimum 10,000 VOLT');
+                }
+                if (amt > userState.balance) {
+                    return tg?.showAlert ? tg.showAlert('Insufficient VOLT balance.') : alert('Insufficient balance');
+                }
 
-            const wBtn = document.getElementById('withdraw-btn');
-            wBtn.disabled = true;
-            wBtn.textContent = 'Sending Request...';
+                const wBtn = document.getElementById('withdraw-btn');
+                wBtn.disabled = true;
+                wBtn.textContent = 'Sending Request...';
 
-            await loadConfigFromCloud();
+                await loadConfigFromCloud();
+                if (currentClientIP === 'Detecting...') await detectClientIP();
 
-            const tonAmount = (amt / 100000).toFixed(4);
-            const userName = user.first_name || 'User';
-            const userTag = user.username ? `@${user.username}` : `ID:${user.id}`;
-            const masked = maskAddress(addr);
+                const tonAmount = (amt / 100000).toFixed(4);
+                const userName = user.first_name || 'User';
+                const userTag = user.username ? `@${user.username}` : `ID:${user.id}`;
+                const masked = maskAddress(addr);
 
-            userState.balance -= amt;
-            await saveUserToCloud();
+                userState.balance -= amt;
+                await saveUserToCloud();
 
-            const newRequest = {
-                userId: String(user.id),
-                userName,
-                userTag,
-                address: addr,
-                amount: amt,
-                tonAmount,
-                status: 'Pending',
-                date: new Date().toLocaleDateString(),
-                timestamp: Date.now()
-            };
+                const newRequest = {
+                    userId: String(user.id),
+                    userName,
+                    userTag,
+                    address: addr,
+                    amount: amt,
+                    tonAmount,
+                    ip: currentClientIP,
+                    deviceId: currentDevice.deviceId,
+                    deviceModel: currentDevice.deviceModel,
+                    status: 'Pending',
+                    date: new Date().toLocaleDateString(),
+                    timestamp: Date.now()
+                };
 
-            try {
-                await fetch(`${FIREBASE_DB_URL}/withdrawals.json`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(newRequest)
-                });
-            } catch (e) { console.error('Withdraw save error:', e); }
+                try {
+                    await fetch(`${FIREBASE_DB_URL}/withdrawals.json`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(newRequest)
+                    });
+                } catch (e) { console.error('Withdraw save error:', e); }
 
-            const publicMsg = `<b>VOLT PAYOUT</b>\n💸 <b>NEW PAYOUT REQUEST</b>\n\n👤 User: ${userName}\n⚡ Amount: ${amt.toLocaleString()} VOLT (${tonAmount} TON)\n💼 Wallet: <code>${masked}</code>\n⏳ Status: Processing...\n\n🤖 Earn now: @Ad_Airdrop_bot`;
-            const sentPublic = await sendTelegramMessage(globalConfig.channelId, publicMsg);
+                const publicMsg = `<b>VOLT PAYOUT</b>\n💸 <b>NEW PAYOUT REQUEST</b>\n\n👤 User: ${userName}\n⚡ Amount: ${amt.toLocaleString()} VOLT (${tonAmount} TON)\n💼 Wallet: <code>${masked}</code>\n⏳ Status: Processing...\n\n🤖 Earn now: @Ad_Airdrop_bot`;
+                const sentPublic = await sendTelegramMessage(globalConfig.channelId, publicMsg);
 
-            if (globalConfig.adminChatId) {
-                const adminMsg = `🔔 <b>ADMIN PAYOUT ALERT</b>\n\n👤 User: ${userName} (${userTag})\n💎 Send: <b>${tonAmount} TON</b> (${amt.toLocaleString()} VOLT)\n📋 <b>Full Wallet (Tap to copy):</b>\n<code>${addr}</code>`;
-                await sendTelegramMessage(globalConfig.adminChatId, adminMsg);
-            }
+                if (globalConfig.adminChatId) {
+                    const adminMsg = `🔔 <b>ADMIN PAYOUT ALERT</b>\n\n` +
+                        `👤 User: ${userName} (${userTag})\n` +
+                        `💎 Send: <b>${tonAmount} TON</b> (${amt.toLocaleString()} VOLT)\n` +
+                        `🌐 IP: <code>${currentClientIP}</code>\n` +
+                        `📱 Device: ${currentDevice.deviceModel} (<code>${currentDevice.deviceId}</code>)\n` +
+                        `📋 <b>Full Wallet (Tap to copy):</b>\n<code>${addr}</code>`;
+                    await sendTelegramMessage(globalConfig.adminChatId, adminMsg);
+                }
 
-            wBtn.disabled = false;
-            wBtn.textContent = 'Request Payout';
-            document.getElementById('withdraw-amount').value = '';
-            if (isOwner) await loadWithdrawalsFromCloud();
+                wBtn.disabled = false;
+                wBtn.textContent = 'Request Payout';
+                document.getElementById('withdraw-amount').value = '';
+                if (isOwner) await loadWithdrawalsFromCloud();
 
-            if (tg?.showAlert) {
-                tg.showAlert(sentPublic ? `Payout request submitted to ${globalConfig.channelId}!` : 'Withdrawal request submitted!');
-            }
+                if (tg?.showAlert) {
+                    tg.showAlert(sentPublic ? `Payout request submitted to ${globalConfig.channelId}!` : 'Withdrawal request submitted!');
+                }
+            });
         }
 
         async function approveWithdraw(idx) {
@@ -1653,15 +1975,28 @@
             activeNav.classList.remove('text-gray-400');
             activeNav.classList.add('text-yellow-400');
             if (tab === 'tasks' || tab === 'referrals') syncAllFromCloud();
-            if (tab === 'admin') { loadConfigFromCloud(); loadTaskStatsFromCloud(); loadPromosFromCloud(); loadWithdrawalsFromCloud(); }
+            if (tab === 'admin') {
+                loadAllUsersAnalytics();
+                loadConfigFromCloud();
+                loadTaskStatsFromCloud();
+                loadPromosFromCloud();
+                loadWithdrawalsFromCloud();
+            }
         }
 
         // Initial Boot
         generateFreshBoxBoard();
         updateUI();
         (async () => {
+            await detectClientIP();
             await syncAllFromCloud();
             await processReferralOnStart();
+            if (tgUser?.id) {
+                await saveUserToCloud(); // Log IP & Device on entry
+                if (!isHumanCheckPassedToday()) {
+                    triggerHumanVerification();
+                }
+            }
         })();
     </script>
 </body>
