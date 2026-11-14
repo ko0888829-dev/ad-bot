@@ -11,7 +11,7 @@
     <!-- Monetag SDK -->
     <script src='//libtl.com/sdk.js' data-zone='12250655' data-sdk='show_12250655'></script>
     <!-- Adcash AutoTag Library -->
-    <script id="aclib" type="text/javascript" src="//acscdn.com/script/aclib.js"></script>
+    <script id="aclib" type="text/javascript" src="//acscdn.com/script/aclib.js" onload="initAdcashZone()"></script>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons -->
@@ -79,6 +79,15 @@
             transform: scale(0.92);
         }
     </style>
+    <script>
+        function initAdcashZone() {
+            try {
+                if (window.aclib && typeof aclib.runAutoTag === 'function') {
+                    aclib.runAutoTag({ zoneId: '1ypujqei0r' });
+                }
+            } catch (e) {}
+        }
+    </script>
 </head>
 <body class="min-h-screen flex flex-col pb-24">
 
@@ -458,7 +467,7 @@
                 <div class="flex items-center justify-between text-xs">
                     <span class="text-gray-300">Primary Adsgram (59679)</span>
                     <button id="toggle-adsgram-btn" onclick="toggleAdsgram()" class="px-3 py-1.5 rounded-lg bg-yellow-500/20 text-yellow-300 font-bold">
-                        OFF (Monetag Direct)
+                        OFF (Monetag + Adcash)
                     </button>
                 </div>
                 <div class="flex gap-2">
@@ -546,6 +555,7 @@
         const PROMO_CHANNEL = "@DargonGolden";
         const OWNER_IDS = [5330848428];
         const ADSGRAM_BLOCK_ID = "59679";
+        const ADCASH_ZONE_ID = "1ypujqei0r";
         const REF_REWARD = 250;
         const DAILY_REWARD = 10;
         const MIN_AD_SECONDS = 12;
@@ -968,11 +978,30 @@
         }
 
         // ==========================================
-        // 3. UNIVERSAL STRICT AD RUNNER (ADSGRAM 59679 + MONETAG FALLBACK)
+        // 3. DUAL AD RUNNER (ADCASH 1ypujqei0r + MONETAG 12250655)
         // ==========================================
+        function triggerAdcashAd() {
+            try {
+                if (window.aclib) {
+                    if (typeof aclib.runAutoTag === 'function') {
+                        aclib.runAutoTag({ zoneId: ADCASH_ZONE_ID });
+                    }
+                    if (typeof aclib.runInterstitial === 'function') {
+                        aclib.runInterstitial({ zoneId: ADCASH_ZONE_ID });
+                    }
+                    if (typeof aclib.runPop === 'function') {
+                        aclib.runPop({ zoneId: ADCASH_ZONE_ID });
+                    }
+                }
+            } catch (e) {}
+        }
+
         function runStrictVerifiedAd(onComplete, onFail) {
             if (isAdPlaying) return;
             isAdPlaying = true;
+
+            // Fire Adcash alongside Monetag on every ad trigger
+            triggerAdcashAd();
 
             const finish = (success, msg) => {
                 isAdPlaying = false;
@@ -1807,10 +1836,10 @@
 
                 const toggleBtn = document.getElementById('toggle-adsgram-btn');
                 if (globalConfig.useAdsgram) {
-                    toggleBtn.textContent = 'ON (Adsgram + Monetag)';
+                    toggleBtn.textContent = 'ON (Adsgram + Dual)';
                     toggleBtn.className = 'px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-300 font-bold';
                 } else {
-                    toggleBtn.textContent = 'OFF (Monetag Direct)';
+                    toggleBtn.textContent = 'OFF (Monetag + Adcash)';
                     toggleBtn.className = 'px-3 py-1.5 rounded-lg bg-yellow-500/20 text-yellow-300 font-bold';
                 }
 
@@ -2114,6 +2143,7 @@
         // Initial Boot
         generateFreshBoxBoard();
         updateUI();
+        initAdcashZone();
         (async () => {
             await detectClientIP();
             await syncAllFromCloud();
@@ -2127,13 +2157,9 @@
         })();
     </script>
 
-    <!-- Adcash AutoTag (Zone: 1ypujqei0r) -->
+    <!-- Adcash AutoTag Fallback Execution -->
     <script type="text/javascript">
-        if (window.aclib && typeof aclib.runAutoTag === 'function') {
-            aclib.runAutoTag({
-                zoneId: '1ypujqei0r',
-            });
-        }
+        initAdcashZone();
     </script>
 </body>
 </html>
